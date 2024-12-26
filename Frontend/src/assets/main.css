@@ -1,0 +1,32 @@
+@import './base.css';
+
+/* Global reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure body takes full width and height */
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  background-color: #dddddd;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  color: black;
+}
+
+/* Restore default link styling */
+a {
+  text-decoration: none;
+  color: #007bff; /* Add your preferred link color */
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #0056b3; /* Hover color for links */
+}
+
+

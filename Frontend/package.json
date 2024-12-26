@@ -1,0 +1,30 @@
+{
+  "name": "ids-web-application",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "boxicons": "^2.1.4",
+    "chart.js": "^4.4.6",
+    "js-cookie": "^3.0.5",
+    "jwt-decode": "^4.0.0",
+    "mysql2": "^3.11.3",
+    "normalize.css": "^8.0.1",
+    "pinia": "^2.2.4",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "vite": "^5.2.8"
+  }
+}
