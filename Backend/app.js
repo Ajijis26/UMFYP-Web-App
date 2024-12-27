@@ -3,7 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const bcrypt = require('bcrypt'); // Import bcrypt
+const bcrypt = require('bcryptjs'); // Import bcrypt
 const database = require('./database');
 const { idsLogsConnection, userdataConnection } = require('./database');
 const authenticateToken = require('./authMiddleware');
