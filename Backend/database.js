@@ -7,10 +7,10 @@ const config = require('./config');
 const userdataConnection = mysql.createConnection(config.db_userdata);
 userdataConnection.connect((err) => {
   if (err) {
-    console.error('Error connecting to userdata database (AWS RDS):', err);
+    console.error('Error connecting to AWS RDS:', err);
     process.exit(1);
   } else {
-    console.log('Successfully connected to AWS RDS database');
+    console.log('Successfully connected to AWS RDS database (Userdata Table)');
   }
 });
 
