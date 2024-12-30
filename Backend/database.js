@@ -1,30 +1,45 @@
 // database.js
 const mysql = require('mysql2');
+const AWS = require('aws-sdk');
 const config = require('./config');
 
 // Connection for userdata schema
 const userdataConnection = mysql.createConnection(config.db_userdata);
 userdataConnection.connect((err) => {
   if (err) {
-    console.error('Error connecting to userdata database:', err);
+    console.error('Error connecting to userdata database (AWS RDS):', err);
     process.exit(1);
   } else {
-    console.log('Connected to userdata database');
+    console.log('Successfully connected to AWS RDS database');
   }
 });
 
-// Connection for ids_logs_db schema
-const idsLogsConnection = mysql.createConnection(config.db_ids_logs);
-idsLogsConnection.connect((err) => {
-  if (err) {
-    console.error('Error connecting to ids_logs_db database:', err);
-    process.exit(1);
-  } else {
-    console.log('Connected to ids_logs_db database');
-  }
+// DynamoDB Setup
+AWS.config.update({
+  region: config.aws_dynamodb.region,
+  accessKeyId: config.aws_dynamodb.accessKeyId,
+  secretAccessKey: config.aws_dynamodb.secretAccessKey,
 });
+
+// DynamoDB Client
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
+
+// Test DynamoDB Connection
+(async () => {
+  try {
+    const params = {
+      TableName: config.aws_dynamodb.tableName,
+      Limit: 1, // Try to fetch 1 item to confirm the table exists
+    };
+    await dynamoDB.scan(params).promise();
+    console.log(`Successfully connected to the DynamoDB table: ${config.aws_dynamodb.tableName}`);
+  } catch (error) {
+    console.error('Error connecting to DynamoDB:', error.message);
+    process.exit(1);
+  }
+})();
 
 module.exports = {
   userdataConnection,
-  idsLogsConnection,
+  dynamoDB,
 };
