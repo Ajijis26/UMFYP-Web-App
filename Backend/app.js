@@ -53,7 +53,8 @@ app.post('/api/login', async (req, res) => {
 
     res.status(response.status).json({
       message: response.message,
-      user: response.user, // Send user details back if needed
+      token: response.token,
+      user: response.user,
     });
   } catch (err) {
     res.status(err.status).json({ error: err.error });
