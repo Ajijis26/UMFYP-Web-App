@@ -7,7 +7,7 @@ const config = require('./config');
 const userdataConnection = mysql.createConnection(config.db_userdata);
 userdataConnection.connect((err) => {
   if (err) {
-    console.error('Error connecting to AWS RDS:', err);
+    console.error('Error connecting to AWS RDS:', err.message, err.stack);
     process.exit(1);
   } else {
     console.log('Successfully connected to AWS RDS database (Userdata Table)');
@@ -34,7 +34,7 @@ const dynamoDB = new AWS.DynamoDB.DocumentClient();
     await dynamoDB.scan(params).promise();
     console.log(`Successfully connected to the DynamoDB table: ${config.aws_dynamodb.tableName}`);
   } catch (error) {
-    console.error('Error connecting to DynamoDB:', error.message);
+    console.error('Error connecting to DynamoDB:', error.message, error.stack);
     process.exit(1);
   }
 })();

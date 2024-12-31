@@ -6,9 +6,9 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1]; // Extract the token
 
   if (!token) {
-    console.error("No token provided.")
-    return res.status(401).json({ message: 'Access denied. No token provided.' });
-  }
+    console.error("No token provided. Request headers:", req.headers);
+    return res.status(401).json({ message: 'Access denied. No authentication token found.' });
+  }  
 
   jwt.verify(token, SECRET_KEY, (err, user) => {
     if (err) {
