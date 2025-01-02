@@ -1,4 +1,4 @@
-//to routes the pages
+// Function : To routes the pages
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import { jwtDecode } from 'jwt-decode';
@@ -25,42 +25,6 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
-
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-
-  if (to.meta.requiresAuth) {
-    if (!token) {
-      return next('/');
-    }
-
-    try {
-      const decoded = jwtDecode(token);
-      
-      // Check token expiration
-      const isTokenExpired = () => {
-        const { exp } = decoded;
-        return Date.now() >= exp * 1000;
-      };
-
-      if (isTokenExpired()) {
-        localStorage.removeItem('token');
-        return next('/');
-      }
-
-      if (to.meta.requiresAdmin && decoded.role !== 'Admin') {
-        return next('/dashboard');
-      }
-    } catch (err) {
-      console.error('Invalid token', err);
-      localStorage.removeItem('token');
-      return next('/');
-    }
-  }
-
-  next();
-});
-
 
 export default router;
 
