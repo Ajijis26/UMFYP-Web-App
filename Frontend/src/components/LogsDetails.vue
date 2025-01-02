@@ -177,7 +177,7 @@ export default {
     const logsPerPage = ref(100);
     const goToPageInput = ref(1); // Input for "Go to Page"
     const sortKey = ref("Timestamp"); // Key to sort by
-    const sortOrder = ref("asc"); // Sort order: 'asc' or 'desc'
+    const sortOrder = ref("desc"); // Sort order: 'asc' or 'desc'
     const isModalVisible = ref(false); // State for modal visibility
     const selectedLog = ref({}); // State for the log to display in the modal
     const isLoading = ref(false);
@@ -281,11 +281,32 @@ export default {
       filteredLogs.value = logs.value.filter((log) => {
         const attributeValue = log[selectedAttribute.value]?.toString().toLowerCase() || "";
 
-        // Date filtering
+        // Parse log timestamp as Date
         const logDate = new Date(log.Timestamp);
-        const matchesDate =
-          (!startDate.value || logDate >= new Date(startDate.value)) &&
-          (!endDate.value || logDate <= new Date(endDate.value));
+
+        // Date filtering logic
+        const matchesDate = (() => {
+          if (startDate.value && endDate.value) {
+            // Range filtering: Include logs from startDate 00:00:00 to endDate 23:59:59
+            const start = new Date(startDate.value);
+            const end = new Date(endDate.value);
+            end.setHours(23, 59, 59, 999); // Set end of the day for the endDate
+            return logDate >= start && logDate <= end;
+          } else if (startDate.value) {
+            // Single day filtering: Include logs for the startDate only
+            const start = new Date(startDate.value);
+            const end = new Date(startDate.value);
+            end.setHours(23, 59, 59, 999); // Set end of the day for the startDate
+            return logDate >= start && logDate <= end;
+          } else if (endDate.value) {
+            // Include logs up to the endDate 23:59:59
+            const end = new Date(endDate.value);
+            end.setHours(23, 59, 59, 999);
+            return logDate <= end;
+          }
+          // No date filter applied
+          return true;
+        })();
 
         // Search term filtering
         const matchesSearchTerm = attributeValue.includes(term);
@@ -296,21 +317,22 @@ export default {
       currentPage.value = 1; // Reset to the first page after filtering
     };
 
+
     // Sort Function
     const sortData = (key) => {
       if (sortKey.value === key) {
-        sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+        sortOrder.value = sortOrder.value === "desc" ? "asc" : "desc";
       } else {
         sortKey.value = key;
-        sortOrder.value = "asc";
+        sortOrder.value = "desc";
       }
 
       filteredLogs.value.sort((a, b) => {
         const valA = a[key];
         const valB = b[key];
 
-        if (valA < valB) return sortOrder.value === "asc" ? -1 : 1;
-        if (valA > valB) return sortOrder.value === "asc" ? 1 : -1;
+        if (valA < valB) return sortOrder.value === "desc" ? -1 : 1;
+        if (valA > valB) return sortOrder.value === "desc" ? 1 : -1;
         return 0;
       });
 
