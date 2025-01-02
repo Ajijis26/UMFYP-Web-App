@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create a global axios instance
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: process.env.VITE_API_BASE_URL || 'http://localhost:3000',
   withCredentials: true, // Include cookies for authentication
 });
 
@@ -11,20 +11,18 @@ const apiClient = axios.create({
 apiClient.interceptors.response.use(
   response => response,
   error => {
-    console.error('API Error:', error.response || error.message);
-    return Promise.reject(error.response?.data?.error || error.message);
+    const customError = {
+      message: error.response?.data?.error || error.message,
+      status: error.response?.status,
+    };
+    console.error('API Error:', customError);
+    return Promise.reject(customError);
   }
 );
 
-export const registerUser = async (userData) => {
-  return apiClient.post('/api/register', userData);
-};
-
-export const loginUser = async (userData) => {
-  return apiClient.post('/api/login', userData);
-};
-
-// Additional methods
+// Define API methods
+export const registerUser = async (userData) => apiClient.post('/api/register', userData);
+export const loginUser = async (userData) => apiClient.post('/api/login', userData);
 export const getUserDetails = (userId) => apiClient.get(`/api/users/${userId}`);
 export const updateUserDetails = (userId, userData) => apiClient.put(`/api/users/${userId}`, userData);
 
