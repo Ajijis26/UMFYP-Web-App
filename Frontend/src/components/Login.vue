@@ -1,30 +1,57 @@
 <template>
-    <div class="login-container">|
+    <div class="login-container">
       <div class="login">
         <h1>User Login</h1>
         <form @submit.prevent="login">
+          <!-- Username Input-->
           <div class="inputbox">
-            <div class="input-icon">
-              <input type="text" placeholder="Username" v-model="username" id="username" required />
-              <box-icon name="user" type="solid" class="username-icon"></box-icon>
-            </div>
+            <input
+              type="text"
+              placeholder="Username"
+              v-model="username"
+              id="username"
+              required
+              autofocus
+              @input="clearError"
+            />
           </div>
+
+          <!-- Password Input -->
           <div class="inputbox">
-            <div class="input-icon">
-              <input :type="showPassword ? 'text' : 'password'" placeholder="Password" v-model="password" id="password" required />
-              <span @mouseover="showPassword = true" @mouseout="showPassword = false">
-                <box-icon :name="showPassword ? 'lock-open-alt' : 'lock-alt'" type="solid"></box-icon>
-              </span>
-            </div>
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="Password"
+              v-model="password"
+              id="password"
+              required
+              autocomplete="off"
+              @input="clearError"
+            />
           </div>
-          <div class="remember-forgot">
+
+          <!-- Show Password Checkbox -->
+          <div class="checkbox-container show-password">
             <label>
-              <input type="checkbox" v-model="rememberMe" /> Remember Me
+              <input type="checkbox" v-model="showPassword" />
+              <span>Show Password</span>
             </label>
           </div>
-          <button type="submit" class="btn">Login</button>
+
+          <!-- Remember Me Checkbox -->
+          <div class="checkbox-container remember-me">
+            <label>
+              <input type="checkbox" v-model="rememberMe" />
+              <span>Remember Me</span>
+            </label>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn" :disabled="isLoading">
+            {{ isLoading ? 'Logging in...' : 'Login' }}
+          </button>
+
         </form>
-        <p v-if="error" class="error-message">{{ error }}</p>
+        <p v-if="error" class="error-banner">{{ error }}</p>
       </div>
     </div>
   </template>
@@ -40,12 +67,18 @@ export default {
       password: '',
       showPassword: false,
       rememberMe: false,
+      isLoading: false,
       error: '',
     };
   },
   methods: {
+    clearError() {
+      this.error = ""; // Clear the error message
+    },
+    
     async login() {
-      this.error = ""; // Clear any previous error messages
+      this.error = "";
+      this.isLoading = true;
 
       try {
         const response = await axios.post('http://localhost:3000/api/login', {
@@ -61,25 +94,33 @@ export default {
 
           localStorage.setItem("token", token);
           console.log("Token stored:", token);
+          localStorage.setItem("userName", decoded.fullname); // Save user name
+          localStorage.setItem("userRole", decoded.role); // Save user role
+
           if (this.rememberMe) {
             localStorage.setItem("rememberedUsername", this.username);
           }
 
-          if (decoded.role === "Admin") {
-            this.$router.push("/dashboard");
-          } else if (decoded.role === "Guest") {
-            this.$router.push("/dashboard"); // Adjust the path as needed
+          if (decoded.role === "Admin" || decoded.role === "Guest") {
+            this.$router.push(this.$route.query.redirect || "/dashboard");
           } else {
-            this.$router.push("/myaccount");
+            alert("Invalid Account. Please try log in again.");
+            localStorage.removeItem("token");
+            this.$router.push("/");
           }
         } else {
           // Handle unexpected status codes
           this.error = "Unexpected server response. Please try again.";
-          console.error("Unexpected response:", response);
+          this.username = ""; 
+          this.password = "";
       }
       } catch (err) {
         this.error = err.response?.data?.error || "Invalid username or password";
+        this.username = "";
+        this.password = "";
         console.error("Login error:", err.response || err);
+      } finally {
+        this.isLoading = false; // End loading
       }
     },
   },
@@ -94,12 +135,6 @@ export default {
     justify-content: center;
     align-items: center;
     height: 75vh;
-}
-box-icon {
-  display: inline-block !important; /* Ensure it occupies space */
-  visibility: visible !important;  /* Ensure it is visible */
-  font-size: 24px !important;      /* Set a proper font size */
-  color: black !important;         /* Ensure color is visible */
 }
 
 .login {
@@ -124,19 +159,16 @@ box-icon {
     margin-bottom: 1em;
 }
 
-.login .input-icon {
-    position: relative;
-}
-
 .login input[type="text"],
 .login input[type="password"] {
-    width: calc(100% - 40px);
-    height: 25px;
+    width: 100%;
+    height: 45px;
     padding: 1em;
     border: 1px solid darkgrey;
     border-radius: 40px;
     font-size: 1.2rem;
     transition: all 0.3s ease;
+    box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.1);
 }
 
 .login input[type="text"]::placeholder,
@@ -145,30 +177,85 @@ box-icon {
     font-size: 1.2rem;
 }
 
-.login select:focus,
-.login input[type="text"]:focus,
-.login input[type="password"]:focus {
-    outline: none; /* Remove outline on focus */
-    border-color: #007bff; /* Changed border color to blue when focused */
+.login input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow:0px 0 5px royalblue; /* Glow effect on focus */
+  background-color: #f9f9ff; /* Slight background color change */
 }
 
-/* Styling for icon */
-.login .input-icon box-icon {
-    color: rgb(0, 0, 0);
-    position: absolute;
-    top: 50%;
-    right: 30px;
-    transform: translateY(-50%);
-    cursor: pointer;
-    width: 24px; /* Adjust this value to make the icon bigger */
-    height: 24px; /* Adjust this value to make the icon bigger */
+/* Checkbox Styling */
+.checkbox-container {
+  margin-bottom: 0.5em;
 }
 
-/* Styling for Remember Me Labels */
-.login label {
-    display: block;
-    margin-bottom: 0.5em;
-    color: black;
+.checkbox-container label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.show-password label:hover span{
+  color: #ff0000; /* Highlight text on hover */
+  transition: color 0.3s ease; /* Smooth transition effect */
+}
+
+.remember-me label:hover span{
+  color: gray; /* Highlight text on hover */
+  transition: color 0.3s ease; /* Smooth transition effect */
+}
+
+.checkbox-container input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin-right: 8px;
+  appearance: none; /* Remove default checkbox */
+  background-color: white;
+  border: 2px solid #000000;
+  border-radius: 4px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.show-password input[type="checkbox"]:hover {
+  background-color: #e6f7ff; /* Light blue background */
+  border-color: #ff0000; /* Blue border on hover */
+  transform: scale(1.1); /* Slight zoom for better feedback */
+  transition: all 0.3s ease; /* Smooth transition effect */
+}
+
+.remember-me input[type="checkbox"]:hover {
+  background-color: #e6f7ff; /* Light blue background */
+  border-color: gray; /* Blue border on hover */
+  transform: scale(1.1); /* Slight zoom for better feedback */
+  transition: all 0.3s ease; /* Smooth transition effect */
+}
+
+.show-password input[type="checkbox"]:checked {
+  background-color: #ff0000;
+  transform: scale(1.1); /* Slight zoom when checked */
+  border-color: #000000; /* Darker border when checked */
+}
+
+.remember-me input[type="checkbox"]:checked {
+  background-color: grey;
+  transform: scale(1.1); /* Slight zoom when checked */
+  border-color: #000000; /* Darker border when checked */
+}
+
+.checkbox-container span {
+  font-size: 0.8rem;
+  color: black;
+}
+
+.show-password input[type="checkbox"]:checked + span {
+  color: red; /* Changes the label text color when checked */
+  font-weight: bold; /* Optional: bold the label text */
+}
+
+/* Specific Styling for "Remember Me" Checkbox */
+.remember-me input[type="checkbox"]:checked + span {
+  color: rgb(0, 0, 0); /* Changes the label text color when checked */
+  font-weight: bold; /* Optional: bold the label text */
 }
 
 /* Styling for Submit Button */
@@ -176,7 +263,7 @@ box-icon {
     width: 50%;
     padding: 0.5em;
     background-color: #007bff;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     text-transform: uppercase;
     color: #fff;
     border: none;
@@ -195,10 +282,24 @@ box-icon {
 }
 
 /* Styling for Error Message */
-.error-message {
-    text-align: center;
-    color: red;
-    margin-top: 1em;
+.error-banner {
+  background-color: #ffdddd; /* Light red background */
+  color: red;
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 1em;
+  text-align: center;
+  font-size: 1rem;
+  border: 1px solid red;
 }
 
+
+@media (max-width: 600px) {
+  .login h1 {
+    font-size: 1.5rem; /* Reduce font size for smaller screens */
+  }
+  .login button {
+    width: 100%; /* Full-width button for small screens */
+  }
+}
 </style>
