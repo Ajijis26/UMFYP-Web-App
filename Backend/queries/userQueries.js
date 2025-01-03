@@ -176,6 +176,24 @@ async function deleteUsers(userIds) {
   });
 }
 
+async function getCurrentUser(username) {
+  return new Promise((resolve, reject) => {
+    const sql = 'SELECT id, role, full_name AS fullname, username, email FROM users WHERE username = ?';
+    userdataConnection.query(sql, [username], (err, results) => {
+      if (err) {
+        console.error('Database error while fetching current user:', err);
+        return reject({ status: 500, error: 'Internal server error while fetching user details' });
+      }
+
+      if (results.length === 0) {
+        return reject({ status: 404, error: 'User not found' });
+      }
+
+      resolve({ status: 200, data: results[0] });
+    });
+  });
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -183,4 +201,5 @@ module.exports = {
   fetchUserDetails,
   fetchAllUsers,
   deleteUsers,
+  getCurrentUser,
 };
