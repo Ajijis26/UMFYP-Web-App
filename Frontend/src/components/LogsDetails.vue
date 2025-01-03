@@ -215,6 +215,8 @@ export default {
       "RerrorRate",
       "Flag",
       "Land",
+      "Status",
+      "Owner",
     ];
 
     // Fetch Log Function
