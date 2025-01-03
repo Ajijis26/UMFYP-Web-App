@@ -161,7 +161,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import axios from "axios";
 
 export default {
