@@ -217,6 +217,7 @@ export default {
       "Land",
       "Status",
       "Owner",
+      "LastUpdatedBy"
     ];
 
     // Fetch Log Function
