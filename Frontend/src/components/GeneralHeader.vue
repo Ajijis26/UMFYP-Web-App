@@ -35,8 +35,8 @@ const userRole = ref("");
 
 // Listen for changes to user data (via App.vue)
 const updateUserDetails = (updatedUser) => {
-  userName.value = updatedUser.full_name || userName.value;
-  userRole.value = updatedUser.role || userRole.value;
+  userName.value = updatedUser.userName || userName.value;
+  userRole.value = updatedUser.userRole || userRole.value;
 };
 
 // Fetch token and decode user details on mount
@@ -44,7 +44,7 @@ const fetchUserDetails = () => {
   const token = localStorage.getItem("token");
   if (token) {
     const decoded = jwtDecode(token);
-    userName.value = decoded.full_name || "Error";
+    userName.value = decoded.fullname || "Error";
     userRole.value = decoded.role || "Error";
   }
 };
@@ -61,7 +61,9 @@ const goToAccount = () => router.push('/myaccount');
 const registerUser = () => router.push('/registeruser');
 const manageUsers = () => router.push('/manageuser');
 const logout = () => {
-  localStorage.removeItem('token'); // Remove the token
+  localStorage.removeItem('token');
+  localStorage.removeItem('userName');
+  localStorage.removeItem('userRole');
   router.push('/'); // Redirect to login
 };
 
