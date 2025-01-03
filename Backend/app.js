@@ -11,6 +11,7 @@ const {
   fetchAllUsers,
   deleteUsers,
   updateUserDetails,
+  getCurrentUser,
 } = require('./queries/userQueries');
 const {
   getIdsLogs,
@@ -101,6 +102,23 @@ app.delete('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/currentuser', authenticateToken, async (req, res) => {
+  try {
+    const { username } = req.user; // Extract username from decoded token
+    if (!username) {
+      return res.status(400).json({ error: 'Invalid token, username not found.' });
+    }
+
+    const response = await getCurrentUser(username); // Fetch user details from DB
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    console.error('Error fetching current user:', err);
+    res.status(err.status || 500).json({ error: err.error || 'Failed to fetch user information.' });
+  }
+});
+
+
+
 // IDS Logs Routes
 app.get('/api/ids-logs', authenticateToken, async (req, res) => {
   try {
@@ -123,17 +141,52 @@ app.get('/api/alerts', authenticateToken, async (req, res) => {
 });
 
 app.put('/api/alerts/change-owner', authenticateToken, async (req, res) => {
-  const { alertIds, newOwner } = req.body;
-  const response = await changeAlertOwner(alertIds, newOwner);
-  res.status(response.status).json(response.status === 200 ? { message: response.message } : { error: response.error });
+  const { alerts, newOwner } = req.body;
+
+  if (!Array.isArray(alerts) || alerts.length === 0 || !newOwner) {
+    return res.status(400).json({ error: 'Invalid request data' });
+  }
+
+  console.log("Alerts received:", alerts); // Debug log
+  console.log("New owner:", newOwner); // Debug log
+
+  try {
+    const response = await changeAlertOwner(alerts, newOwner);
+    res.status(response.status).json(
+      response.status === 200
+        ? { message: response.message }
+        : { error: response.error }
+    );
+  } catch (err) {
+    console.error("Error in change-owner route:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-app.put('/api/alerts/:id/status', authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+app.put('/api/alerts/status', authenticateToken, async (req, res) => {
+  const { ConnectionID, SrcIP, status } = req.body;
+
+  // Extract username from the authenticated user
   const { username } = req.user;
-  const response = await updateAlertStatus(id, status, username);
-  res.status(response.status).json(response.status === 200 ? { message: response.message } : { error: response.error });
+
+  // Check if all required fields are provided
+  if (!ConnectionID || !SrcIP || !status) {
+    return res.status(400).json({ error: 'Invalid request data. Ensure all fields are provided.' });
+  }
+
+  try {
+    // Pass the username as LastUpdatedBy
+    const response = await updateAlertStatus(ConnectionID, SrcIP, status, username);
+
+    res.status(response.status).json(
+      response.status === 200
+        ? { message: response.message }
+        : { error: response.error }
+    );
+  } catch (err) {
+    console.error('Error updating alert status:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Logout Route
@@ -147,6 +200,7 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
+
 
 // Start the Server
 const PORT = process.env.PORT || 3000;
