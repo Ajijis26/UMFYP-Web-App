@@ -88,7 +88,7 @@
         </thead>
         <tbody>
           <tr v-if="paginatedLogs.length === 0">
-            <td :colspan="16" class="no-logs-message">No logs found.</td>
+            <td :colspan="16" class="no-logs-message">No log found.</td>
           </tr>
           <tr v-else v-for="(log) in paginatedLogs" :key="log.ConnectionID" @click="showModal(log)">
             <td>{{ log.ConnectionID }}</td>
