@@ -885,7 +885,8 @@ export default {
 .table-container {
   max-height: 65vh; /* Adjust height as needed */
   overflow-y: auto; /* Add vertical scrolling */
-  border: 1px solid #ccc; /* Optional: border for the table container */
+  overflow-x: auto;
+  border: 1px solid #ccc;
 }
 
 .alerts-table {
