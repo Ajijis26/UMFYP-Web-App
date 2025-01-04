@@ -81,7 +81,9 @@
         <thead>
           <tr>
             <th>
-              <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll"/>
+              <label class="checkbox-container">
+                <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" />
+              </label>
             </th>
             <th @click="sortData('Timestamp')">Timestamp</th>
             <th @click="sortData('ConnectionID')">Connection ID</th>
@@ -101,7 +103,9 @@
           </tr>
           <tr v-else v-for="(alert) in paginatedAlerts" :key="alert.ConnectionID" @click="showModal(alert)">
             <td>
-              <input type="checkbox" v-model="selectedAlerts" :value="alert.ConnectionID" @click.stop />
+              <label class="checkbox-container">
+                <input type="checkbox" v-model="selectedAlerts" :value="alert.ConnectionID" @click.stop />
+              </label>
             </td>
             <td>{{ formatTimestamp(alert.Timestamp) }}</td>
             <td>{{ alert.ConnectionID }}</td>
@@ -696,14 +700,14 @@ export default {
   border-radius: 10px;
   cursor: pointer;
   border: 2px solid green;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
 }
 
 .btn-refresh:hover {
   background-color: darkgreen;
-  border: 2px solid darkgreen; /* Slightly darker red border */
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3); /* Add a shadow */
+  border: 2px solid darkgreen;
+  transform: scale(1.1);
+  transition: all 0.3s ease;
 }
 
 .date-range-container {
@@ -773,21 +777,55 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid #d32f2f;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 
 }
 
 .btn-change-owner:hover {
   background-color: darkred;
   border: 2px solid darkred;
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+  transform: scale(1.1);
+  transition: all 0.3s ease;
+}
+
+/* Checkbox Styling */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  height: 100%;
+}
+
+.checkbox-container input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  appearance: none; /* Remove default checkbox */
+  background-color: white;
+  border: 2px solid red;
+  border-radius: 4px; /* Optional: rounded corners */
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Hover Effect */
+.checkbox-container input[type="checkbox"]:hover {
+  background-color: #e6f7ff; /* Light blue background */
+  border-color: darkred; /* Blue border on hover */
+  transform: scale(1.1); /* Slight zoom for better feedback */
+  transition: all 0.3s ease;
+}
+
+/* Checked State */
+.checkbox-container input[type="checkbox"]:checked {
+  background-color: darkred; /* Blue background when checked */
+  border-color: #000000; /* Darker border when checked */
+  transform: scale(1.1); /* Slight zoom when checked */
 }
 
 .status-button {
   padding: 5px 10px;
   border: none;
   border-radius: 10px;
-  font-size: 0.5rem;
+  font-size: 0.7rem;
   cursor: pointer;
   text-transform: uppercase;
   transition: all 0.3s ease;
@@ -797,28 +835,26 @@ export default {
 .status-button.resolved {
   background-color: green; /* Green background */
   color: white; /* White text */
-  border: 2px solid green; /* Slightly darker green border */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add a shadow */
+  border: 2px solid rgb(0, 0, 0); /* Slightly darker green border */
 }
 
 .status-button.resolved:hover {
   background-color: darkgreen; /* Slightly lighter green */
-  border: 2px solid darkgreen; /* Slightly darker red border */
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3); /* Add hover shadow */
+  border: 2px solid black; /* Slightly darker red border */
+  transform: scale(1.1);
+  transition: all 0.3s ease;
 }
 
 /* Unresolved Button Design */
 .status-button.unresolved {
-  background-color: #f44336; /* Red background */
+  background-color: red; /* Red background */
   color: white; /* White text */
-  border: 2px solid #d32f2f; /* Slightly darker red border */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add a shadow */
+  border: 2px solid black; /* Slightly darker red border */
 }
 
 .status-button.unresolved:hover {
   background-color: darkred; /* Slightly lighter red */
-  border: 2px solid darkred; /* Slightly darker red border */
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3); /* Add hover shadow */
+  border: 2px solid black; /* Slightly darker red border */
 }
 
 /* Disabled State */
@@ -836,6 +872,7 @@ export default {
   cursor: not-allowed; /* Disabled cursor */
   border: 2px solid grey; /* Gray border */
   box-shadow: none; /* No shadow */
+  transform: scale(1.0);
 }
 
 .no-logs-message {
@@ -880,6 +917,7 @@ export default {
 .alerts-table th,
 .alerts-table td {
   text-align: center;
+  vertical-align: middle;
   padding: 10px;
   border-bottom: 1px solid #ccc;
 }
