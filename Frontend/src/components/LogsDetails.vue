@@ -73,7 +73,8 @@
 
     <div class="table-container">
       <div v-if="isLoading" class="loading-spinner-overlay">
-        <div class="spinner"></div> <!-- You can replace this with a loading animation -->
+        <div class="spinner"></div>
+        <p class="fetching-logs-text">Fetching Logs</p>
       </div>
       <table class="logs-table">
         <thead>
@@ -852,16 +853,17 @@ export default {
 }
 
 .loading-spinner-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background-color: rgba(109, 109, 109, 0.8);
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 10; /* Ensure it overlays the table */
+  z-index: 9999; /* Ensure it overlays the table */
 }
 
 .spinner {
@@ -871,6 +873,14 @@ export default {
   border-top: 5px solid #ff0800;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.fetching-logs-text {
+  margin-top: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
 }
 
 @keyframes spin {
