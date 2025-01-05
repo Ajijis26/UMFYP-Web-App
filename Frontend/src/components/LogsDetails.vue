@@ -845,13 +845,6 @@ export default {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* Add a shadow */
 }
 
-.loading-spinner {
-  text-align: center;
-  font-size: 1.5rem;
-  color: #007bff;
-  margin-bottom: 20px; /* Add spacing between spinner and table */
-}
-
 .loading-spinner-overlay {
   position: fixed;
   top: 0;
