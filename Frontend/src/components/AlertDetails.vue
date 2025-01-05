@@ -6,7 +6,7 @@
       <div class="action-buttons">
         <!-- Refresh Button -->
         <button class="btn-refresh" @click="fetchAlerts">
-          <i class="fas fa-sync-alt"></i> Refresh
+          <i class="bi bi-arrow-clockwise"></i>
         </button>
 
         <!-- Attribute Selection -->
@@ -778,7 +778,6 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid #d32f2f;
-
 }
 
 .btn-change-owner:hover {
@@ -973,6 +972,13 @@ export default {
 .btn-next[disabled] {
   background-color: gray;
   cursor: not-allowed;
+}
+
+.btn-prev:hover:not([disabled]),
+.btn-next:hover:not([disabled]) {
+  background-color: #0056b3;
+  transform: scale(1.05);
+  transition: all 0.3s ease;
 }
 
 .modal-overlay {
