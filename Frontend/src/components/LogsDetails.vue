@@ -567,14 +567,14 @@ export default {
   border-radius: 10px;
   cursor: pointer;
   border: 2px solid green;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
 }
 
 .btn-refresh:hover {
   background-color: darkgreen;
   border: 2px solid darkgreen; /* Slightly darker red border */
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3); /* Add a shadow */
+  transform: scale(1.05);
+  transition: all 0.3s ease;
 }
 
 .date-range-container {
@@ -643,14 +643,14 @@ export default {
   border-radius: 10px;
   cursor: pointer;
   border: 2px solid #007bff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
 }
 
 .btn-export:hover {
   background-color: #0056b3;
   border: 2px solid #0056b3;
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+  transform: scale(1.05);
+  transition: all 0.3s ease;
 }
 
 .no-logs-message {
@@ -827,22 +827,23 @@ export default {
 
 .modal-close-button {
   display: block;
-  margin: 20px auto 0;
+  margin: 15px auto 0;
   padding: 10px 20px; /* Adjust padding for button size */
   background-color: red; /* Button background color */
   color: white; /* Button text color */
-  border: none; /* Remove border */
-  border-radius: 10px; /* Rounded corners */
+  border: 1px red; /* Remove border */
+  border-radius: 20px; /* Rounded corners */
   cursor: pointer; /* Pointer cursor on hover */
   font-size: 1rem; /* Adjust font size */
   font-weight: bold;
-  transition: background-color 0.3s ease; /* Smooth hover effect */
+  transition: all 0.3s ease;
 }
 
 .modal-close-button:hover {
   background-color: darkred;
-  border: 1px solid darkred; /* Slightly darker red border */
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* Add a shadow */
+  border: 1px solid darkred;
+  transform: scale(1.05);
+  transition: all 0.3s ease;
 }
 
 .loading-spinner-overlay {
