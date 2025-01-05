@@ -7,24 +7,45 @@ const tokenExpiry = '1h';
 async function registerUser(role, fullname, username, email, password) {
   return new Promise((resolve, reject) => {
     // Basic validation
-    if (!role || !fullname || !username || !email || !password) {
-        return reject({ status: 400, error: 'All fields are required.' });
-      }
-  
-      if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-        return reject({ status: 400, error: 'Invalid email format.' });
-      }
-  
-      if (password.length < 8) {
-        return reject({ status: 400, error: 'Password must be at least 8 characters long.' });
-      }
+    if (!role) {
+      return reject({ status: 400, error: 'Role is required.' });
+    }
+
+    if (!fullname) {
+      return reject({ status: 400, error: 'Full name is required.' });
+    }
+
+    if (!username) {
+      return reject({ status: 400, error: 'Username is required.' });
+    }
+
+    if (!email) {
+      return reject({ status: 400, error: 'Email is required.' });
+    }
+
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return reject({ status: 400, error: 'Invalid email format.' });
+    }
+
+    if (!password) {
+      return reject({ status: 400, error: 'Password is required.' });
+    }
+
+    if (password.length < 8) {
+      return reject({ status: 400, error: 'Password must be at least 8 characters long.' });
+    }
     
     const checkUserSql = 'SELECT * FROM users WHERE username = ? OR email = ?';
     userdataConnection.query(checkUserSql, [username, email], async (checkErr, results) => {
       if (checkErr) return reject({ status: 500, error: 'Internal server error.' });
 
       if (results.length > 0) {
-        return reject({ status: 400, error: 'Username or email already exists.' });
+        if (results.some(user => user.username === username)) {
+          return reject({ status: 400, error: 'Username already exists.' });
+        }
+        if (results.some(user => user.email === email)) {
+          return reject({ status: 400, error: 'Email already exists.' });
+        }
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -136,8 +157,25 @@ async function updateUserDetails(username, fullname, email, oldPassword, newPass
             }
           );
         });
+
+        // Generate a new token with updated user details
+        const updatedToken = jwt.sign(
+          {
+            id: user.id,
+            role: user.role,
+            username: newUsername || username,
+            fullname,
+            email,
+          },
+          secretKey,
+          { expiresIn: tokenExpiry }
+        );
   
-        resolve({ status: 200, message: 'User details updated successfully' });
+        resolve({
+          status: 200,
+          message: 'User details updated successfully',
+          token: updatedToken, // Ensure this is correctly returned
+        });
       } catch (err) {
         console.error('Error updating user details:', err);
         reject({ status: 500, error: 'Internal server error' });
