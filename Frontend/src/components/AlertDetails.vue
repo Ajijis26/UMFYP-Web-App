@@ -707,7 +707,7 @@ export default {
 .btn-refresh:hover {
   background-color: darkgreen;
   border: 2px solid darkgreen;
-  transform: scale(1.1);
+  transform: scale(1.05);
   transition: all 0.3s ease;
 }
 
@@ -784,7 +784,7 @@ export default {
 .btn-change-owner:hover {
   background-color: darkred;
   border: 2px solid darkred;
-  transform: scale(1.1);
+  transform: scale(1.05);
   transition: all 0.3s ease;
 }
 
