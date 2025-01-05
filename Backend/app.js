@@ -29,8 +29,14 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 // User Routes
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', authenticateToken, async (req, res) => {
   const { role, fullname, username, email, password } = req.body;
+
+  // Ensure only Admins can register users
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Access denied. Only Admins can register new users.' });
+  }
+
   try {
     const response = await registerUser(role, fullname, username, email, password);
     res.status(response.status).json(response);
@@ -81,13 +87,16 @@ app.get('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
+//Update User Route
 app.put('/api/users/:username', authenticateToken, async (req, res) => {
   const { username } = req.params;
   const { fullname, email, oldPassword, newPassword, newUsername } = req.body;
   try {
     const response = await updateUserDetails(username, fullname, email, oldPassword, newPassword, newUsername);
-    res.status(response.status).json({ message: response.message });
+    console.log("Updated Token:", response.token); // Debugging
+    res.status(response.status).json({ message: response.message, token: response.token, });
   } catch (err) {
+    console.error("Error in updateUserDetails route:", err); // Debugging
     res.status(err.status).json({ error: err.error });
   }
 });
