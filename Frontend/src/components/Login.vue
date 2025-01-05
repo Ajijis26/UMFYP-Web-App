@@ -47,7 +47,7 @@
 
           <!-- Submit Button -->
           <button type="submit" class="btn" :disabled="isLoading">
-            {{ isLoading ? 'Logging in...' : 'Login' }}
+            {{ isLoading ? 'Logging In' : 'Login' }}
           </button>
 
         </form>
