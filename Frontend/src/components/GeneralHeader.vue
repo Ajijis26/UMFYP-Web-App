@@ -52,24 +52,51 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch  } from "vue";
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+const props = defineProps({
+  userName: {
+    type: String,
+    required: true,
+  },
+  userRole: {
+    type: String,
+    required: true,
+  },
+});
+
 const showDropdown = ref(false);
 const isMenuOpen = ref(false);
-const userName = ref("");
-const userRole = ref("");
 const isLoggingOut = ref(false);
 const isActive = (route) => router.currentRoute.value.path === route;
 const isAdmin = computed(() => userRole.value === 'Admin');
 
+
+const userName = ref(props.userName);
+const userRole = ref(props.userRole);
+
+// Watch for prop changes and update local state
+watch(() => props.userName, (newVal) => {
+  userName.value = newVal;
+});
+
+watch(() => props.userRole, (newVal) => {
+  console.log("User role updated to:", newVal); // Debugging
+  userRole.value = newVal;
+});
+
+const userAvatar = computed(() => {
+  if (userName.value) {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName.value)}&background=random&color=fff&size=128`;
+  }
+  return '/src/assets/default-avatar.png'; // Fallback avatar
+});
+
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
-  if (isMenuOpen.value) {
-    isMenuOpen.value = false; // Close the mobile menu when opening the dropdown
-  }
 };
 
 const toggleMenu = () => {
@@ -84,16 +111,6 @@ const toggleMenu = () => {
 };
 
 
-const userAvatar = computed(() => {
-  if (userName.value) {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      userName.value
-    )}&background=random&color=fff&size=128`;
-  }
-  return "/src/assets/default-avatar.png"; // Fallback to a default avatar image
-});
-
-
 const goToDashboard = () => router.push('/dashboard');
 const goToAlertDetails = () => router.push('/alertdetails');
 const goToLogsDetails = () => router.push('/logsdetails');
@@ -103,12 +120,12 @@ const manageUsers = () => router.push('/manageuser');
 
 const logout = () => {
   showDropdown.value = false;
-  isLoggingOut.value = true; // Show the spinner
+  isLoggingOut.value = true;
   setTimeout(() => {
     localStorage.clear();
-    router.push("/");
-    isLoggingOut.value = false; // Hide the spinner
-  }, 1000); // 1-second delay
+    router.push('/');
+    isLoggingOut.value = false;
+  }, 1000);
 };
 
 // Fetch token and decode user details on mount
