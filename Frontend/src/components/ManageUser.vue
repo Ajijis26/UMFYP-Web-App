@@ -210,7 +210,8 @@ export default {
       this.isLoading = true;
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get('http://localhost:3000/api/users', {
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL; // Use environment variable
+        const response = await axios.get(`${apiBackendUrl}/api/users`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -249,7 +250,8 @@ export default {
       this.isLoading = true; // Show loading spinner
       try {
         const token = localStorage.getItem("token");
-        await axios.delete('http://localhost:3000/api/users', {
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
+        await axios.delete(`${apiBackendUrl}/api/users`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
