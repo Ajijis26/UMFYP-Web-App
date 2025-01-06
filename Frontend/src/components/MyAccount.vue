@@ -127,7 +127,6 @@
 </template>
   
 <script>
-import { ref, onMounted } from "vue";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 
@@ -174,8 +173,8 @@ export default {
         const username = decodedToken.username;
 
         // Fetch user details by username
-        const response = await axios.get(
-          `http://localhost:3000/api/users/${username}`,
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL; // Use environment variable
+        const response = await axios.get(`${apiBackendUrl}/api/users/${username}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -216,8 +215,8 @@ export default {
           newUsername: this.newUsername || this.user.username, // Use new username if provided
         };
 
-        const response = await axios.put(
-          `http://localhost:3000/api/users/${this.user.username}`,
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL; // Use environment variable
+        const response = await axios.put(`${apiBackendUrl}/api/users/${this.user.username}`,
           payload,
           {
             headers: {
