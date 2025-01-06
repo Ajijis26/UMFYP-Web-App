@@ -22,9 +22,13 @@ const {
 
 const app = express();
 
-// Middleware
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174'];
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+const corsOptions = {
+  origin: process.env.FRONTEND_URL , // Use environment variable for Netlify
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
@@ -53,7 +57,7 @@ app.post('/api/login', async (req, res) => {
     // Set token as a cookie
     res.cookie('token', response.token, {
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
+      secure: process.env.NODE_ENV === 'production', // Set to true in production with HTTPS
       sameSite: 'strict',
       maxAge: 3600000, // 1 hour
     });
@@ -210,9 +214,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
 
+//A fallback route to handle unmatched requests
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+
 
 // Start the Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
+
