@@ -239,7 +239,15 @@ export default {
         });
 
         logs.value = response.data; // Store all logs
-        filteredLogs.value = response.data; // Initially, show all logs
+        filteredLogs.value = logs.value.slice(); // Copy logs to filteredLogs
+        updatePagination();
+
+        console.log('Total logs:', logs.value.length);
+        console.log('Filtered logs:', filteredLogs.value.length);
+        console.log('Current page:', currentPage.value);
+        console.log('Logs per page:', logsPerPage.value);
+        console.log('Paginated logs:', paginatedLogs.value);
+
 
         // Clear search and date picker values
         selectedAttribute.value = "";
@@ -365,9 +373,9 @@ export default {
 
 
     const paginatedLogs = computed(() => {
-      const perPage = Number(logsPerPage.value); // Convert logsPerPage to a number
+      const perPage = Number(logsPerPage.value);
       const start = (currentPage.value - 1) * perPage;
-      const end = start + perPage;
+      const end = Math.min(start + perPage, filteredLogs.value.length); // Safeguard
       return filteredLogs.value.slice(start, end);
     });
 
