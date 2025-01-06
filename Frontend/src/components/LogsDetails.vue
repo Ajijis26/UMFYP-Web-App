@@ -234,7 +234,8 @@ export default {
           return; // Exit the function
         }
 
-        const response = await axios.get("http://localhost:3000/api/ids-logs", {
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
+        const response = await axios.get(`${apiBackendUrl}/api/ids-logs`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
