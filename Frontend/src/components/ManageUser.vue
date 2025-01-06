@@ -219,9 +219,15 @@ export default {
         this.filterUsers();
       } catch (error) {
         console.error("Error fetching users:", error);
-        alert(
-          error.response?.data?.error || "Failed to fetch users. Please try again."
-        );
+        if (error.response?.status === 401) {
+            alert("Session expired. Redirecting to login.");
+            localStorage.removeItem("token"); // Clear token
+            this.$router.push("/"); // Redirect to login
+        } else {
+            alert(
+                error.response?.data?.error || "Failed to fetch users. Please try again."
+            );
+        }
       } finally {
         this.isLoading = false;
       }
@@ -254,9 +260,15 @@ export default {
         this.showDeletionSuccessModal = true; // Show success modal
       } catch (error) {
         console.error("Error deleting users:", error);
-        alert(
-          error.response?.data?.error || "Failed to delete users. Please try again."
-        );
+        if (error.response?.status === 401) {
+            alert("Session expired. Redirecting to login.");
+            localStorage.removeItem("token"); // Clear token
+            this.$router.push("/"); // Redirect to login
+        } else {
+            alert(
+                error.response?.data?.error || "Failed to delete users. Please try again."
+            );
+        }
       } finally {
         this.isLoading = false; // Hide loading spinner
       }
@@ -382,6 +394,13 @@ export default {
 
   },
   mounted() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        alert("No valid session found. Redirecting to login.");
+        this.$router.push("/"); // Redirect to login
+        return;
+    }
+
     this.fetchUsers(); // Fetch data on component load
   },
 };

@@ -200,7 +200,11 @@ export default {
         this.clearForm();
       } catch (err) {
         console.error("Registration Error:", err);
-        if (err.response?.data?.error) {
+        if (err.response?.status === 401) {
+          alert("Session expired. Redirecting to login.");
+          localStorage.removeItem("token");
+          this.$router.push("/");
+        } else if (err.response?.data?.error) {
           if (err.response.data.error === "Username already exists.") {
             this.errors.username = true;
             this.usernameErrorText = "Username already exists.";
@@ -264,6 +268,8 @@ export default {
   async mounted() {
     const token = localStorage.getItem('token');
     if (!token) {
+      alert("Token Invalid. Redirecting to login.");
+      localStorage.removeItem("token");
       this.$router.push('/'); // Redirect to login if no token
       return;
     }
@@ -271,7 +277,7 @@ export default {
     try {
       // Decode token to get user role
       const decoded = jwtDecode(token); // Use jwtDecode instead of JSON.parse
-     const userRole = decoded.role;
+      const userRole = decoded.role;
 
       // Redirect if the user is not an Admin
       if (userRole !== 'Admin') {
@@ -279,6 +285,8 @@ export default {
       }
     } catch (err) {
         console.error("Error decoding token:", err);
+        alert("Token Invalid. Redirecting to login.");
+        localStorage.removeItem("token");
         this.$router.push('/'); // Redirect to login on error
     }
   },

@@ -186,7 +186,13 @@ export default {
         this.user = response.data;
       } catch (error) {
         console.error("Error fetching user details:", error);
-        this.errorMessage = "Failed to load user's account details.";
+        if (error.response && error.response.status === 401) {
+          alert("Session expired. Redirecting to login.");
+          localStorage.removeItem("token");
+          window.location.href = "/";
+        } else {
+          this.errorMessage = "Failed to load user's account details.";
+        }
       }
     },
 
@@ -224,8 +230,9 @@ export default {
 
         const newToken = response.data.token;
         if (!newToken) {
-          this.errorMessage = "Failed to retrieve updated token. Please log in again.";
-          console.error("No token found in response");
+          alert("Session expired. Please log in again.");
+          localStorage.removeItem("token");
+          window.location.href = "/";
           return;
         }
 
@@ -234,12 +241,10 @@ export default {
 
         localStorage.setItem("token", newToken);
         axios.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
-        const updatedUser = jwtDecode(newToken);
         this.$emit('userUpdated', {
           userName: this.user.fullname,
           userRole: this.user.role,
         });
-
         this.resetFormFields();
         this.showSuccessModal = true;
       } catch (error) {
@@ -258,7 +263,15 @@ export default {
 
         if (error.response?.data?.error) {
           this.errorMessage = error.response.data.error; // Backend error message
-        } else {
+        } 
+        
+        if (error.response && error.response.status === 401) {
+          alert("Session expired. Redirecting to login.");
+          localStorage.removeItem("token");
+          window.location.href = "/";
+        } 
+        
+        else {
           this.errorMessage = "An error occurred while updating your account.";
         }
       } finally {
