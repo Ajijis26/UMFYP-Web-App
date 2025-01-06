@@ -81,7 +81,8 @@ export default {
       this.isLoading = true;
 
       try {
-        const response = await axios.post('http://localhost:3000/api/login', {
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
+        const response = await axios.post(`${apiBackendUrl}/api/login`, {
           username: this.username,
           password: this.password,
         });
