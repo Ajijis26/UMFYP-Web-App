@@ -292,7 +292,8 @@ export default {
         if (!token) throw new Error("No token found. Please log in again.");
 
         // Optionally, verify token via API (if needed for dynamic user state validation)
-        const response = await axios.get("http://localhost:3000/api/currentuser", {
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
+        const response = await axios.get(`${apiBackendUrl}/api/currentuser`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -318,7 +319,8 @@ export default {
           return; // Exit the function
         }
 
-        const response = await axios.get("http://localhost:3000/api/alerts", {
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
+        const response = await axios.get(`${apiBackendUrl}/api/alerts`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -465,8 +467,8 @@ export default {
           return;
         }
 
-        await axios.put(
-          "http://localhost:3000/api/alerts/change-owner",
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
+        await axios.put(`${apiBackendUrl}/api/alerts/change-owner`,
           {
             alerts: alertsToUpdate,
             newOwner: newOwnerUsername.value,
@@ -508,8 +510,9 @@ export default {
         if (!token) throw new Error("No token found. Please log in again.");
 
         // Send both ConnectionID and SrcIP for the request
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
         await axios.put(
-          `http://localhost:3000/api/alerts/status`,
+          `${apiBackendUrl}/api/alerts/status`,
           {
             ConnectionID: alertItem.ConnectionID, // Partition Key
             SrcIP: alertItem.SrcIP,              // Sort Key
