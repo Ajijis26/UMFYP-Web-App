@@ -180,8 +180,8 @@ export default {
         const token = localStorage.getItem("token");
 
         // Make axios POST request with Authorization header
-        const response = await axios.post(
-          "http://localhost:3000/api/register",
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL; // Use environment variable
+        const response = await axios.post(`${apiBackendUrl}/api/register`,
           {
             role: this.role,
             fullname: this.fullname,
