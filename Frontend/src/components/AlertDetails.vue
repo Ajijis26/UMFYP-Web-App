@@ -118,7 +118,7 @@
             <td>
               <button
                 class="status-button"
-                :class="{ resolved: alert.Status === 'Resolved', unresolved: alert.Status === 'Unresolved' }"
+                :class="{ resolved: alert.Status === 'resolved', unresolved: alert.Status === 'unresolved' }"
                 :disabled="alert.Owner !== currentUser"
                 @click.stop="toggleStatus(alert)"
               >
@@ -503,7 +503,7 @@ export default {
         return;
       }
 
-      const newStatus = alertItem.Status === "Resolved" ? "Unresolved" : "Resolved";
+      const newStatus = alertItem.Status === "resolved" ? "unresolved" : "resolved";
 
       try {
         const token = localStorage.getItem("token");
@@ -858,6 +858,8 @@ export default {
 .status-button.unresolved:hover {
   background-color: darkred; /* Slightly lighter red */
   border: 2px solid black; /* Slightly darker red border */
+  transform: scale(1.1);
+  transition: all 0.3s ease;
 }
 
 /* Disabled State */
