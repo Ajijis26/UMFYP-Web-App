@@ -451,7 +451,7 @@ export default {
       try {
         const alertsToUpdate = selectedAlerts.value.map((id) => {
           const alert = filteredAlerts.value.find((a) => a.ConnectionID === id);
-          return alert ? { ConnectionID: alert.ConnectionID, SrcIP: alert.SrcIP } : null;
+          return alert ? { ConnectionID: alert.ConnectionID, Timestamp: alert.Timestamp } : null;
         }).filter(Boolean); // Remove any null values
 
         console.log("Alerts to update:", alertsToUpdate); // Debug log
@@ -515,7 +515,7 @@ export default {
           `${apiBackendUrl}/api/alerts/status`,
           {
             ConnectionID: alertItem.ConnectionID, // Partition Key
-            SrcIP: alertItem.SrcIP,              // Sort Key
+            Timestamp: alertItem.Timestamp,              // Sort Key
             status: newStatus,                   // New status
           },
           {
