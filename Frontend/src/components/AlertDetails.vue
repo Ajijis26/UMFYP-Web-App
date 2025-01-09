@@ -192,29 +192,34 @@
     </div>
 
     <!-- Modal for Change Owner -->
-    <div
-      v-if="isOwnerModalVisible"
-      class="modal-overlay"
-      tabindex="0"
-    >
+    <div v-if="isOwnerModalVisible" class="modal-overlay">
       <div class="modal-content-changeOwner">
         <h2 class="modal-title">Change Owner</h2>
         <div class="modal-body">
-          <label for="new-owner-input" class="modal-label">Enter New Owner Username :</label>
-          <input
-            id="new-owner-input"
-            type="text"
-            placeholder="Username"
+          <label for="new-owner-select" class="modal-label">Here is the lists of user in the system :</label>
+          <select
+            id="new-owner-select"
             v-model="newOwnerUsername"
             class="modal-input"
-          />
+          >
+            <option disabled value="">Select a username</option>
+            <option v-for="username in usernameslist" :key="username" :value="username">
+              {{ username }}
+            </option>
+          </select>
         </div>
         <div class="modal-footer">
-          <button class="modal-button-cancel" @click="isOwnerModalVisible = false">Cancel</button>
-          <button class="modal-button-confirm" @click="confirmChangeOwner">Confirm</button>
+          <button class="modal-button-cancel" @click="isOwnerModalVisible = false">
+            Cancel
+          </button>
+          <button class="modal-button-confirm" @click="confirmChangeOwner">
+            Confirm
+          </button>
         </div>
       </div>
     </div>
+
+
 
 
   </div>
@@ -247,6 +252,7 @@ export default {
     const closeButton = ref(null);
     const isOwnerModalVisible = ref(false);
     const newOwnerUsername = ref("");
+    const usernameslist = ref([]);
 
 
     const handleEscape = (event) => {
@@ -432,6 +438,29 @@ export default {
       currentPage.value = 1; // Reset to first page after sorting
     };
 
+    const fetchUsernames = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('No token found. Please log in again.');
+          return;
+        }
+
+        const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
+        const response = await axios.get(`${apiBackendUrl}/api/usernameslist`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        usernameslist.value = response.data; // Store usernames in the ref
+        console.log("API Response for usernameslist:", response.data);
+        console.log("Usernames List:", usernameslist.value);
+
+      } catch (err) {
+        console.error("Error fetching usernames:", err);
+        alert("Failed to fetch usernames.");
+      }
+    };
+
     // Change the owner of selected alerts
     const changeOwner = () => {
       if (selectedAlerts.value.length === 0) {
@@ -451,7 +480,14 @@ export default {
       try {
         const alertsToUpdate = selectedAlerts.value.map((id) => {
           const alert = filteredAlerts.value.find((a) => a.ConnectionID === id);
-          return alert ? { ConnectionID: alert.ConnectionID, Timestamp: alert.Timestamp } : null;
+          return alert
+            ? {
+                ConnectionID: alert.ConnectionID,
+                Timestamp: alert.Timestamp,
+                Label: alert.Label,
+                Status: alert.Status,
+              }
+            : null;
         }).filter(Boolean); // Remove any null values
 
         console.log("Alerts to update:", alertsToUpdate); // Debug log
@@ -614,6 +650,7 @@ export default {
     onMounted(() => {
       fetchCurrentUser();
       fetchAlerts();
+      fetchUsernames();
     });
 
     return {
@@ -659,6 +696,7 @@ export default {
       showModal,
       closeModal,
       formatKey,
+      usernameslist,
     };
   },
 };
@@ -1103,6 +1141,24 @@ export default {
   font-size: 1rem;
 }
 
+#new-owner-select {
+  font-family: 'Arial', sans-serif; /* Change to your preferred font */
+  font-size: 16px; /* Adjust font size */
+  color: #333; /* Default font color */
+  background-color: white; /* Background color of the dropdown */
+  border: 2px solid #007bff; /* Border color */
+  border-radius: 10px; /* Rounded corners */
+  padding: 10px; /* Add padding */
+  outline: none; /* Remove the default focus outline */
+  transition: all 0.3s ease; /* Smooth hover and focus effects */
+}
+
+/* When the dropdown is focused */
+#new-owner-select:focus {
+  border-color: red; /* Change border color on focus */
+}
+
+/*
 .modal-input {
   padding: 10px;
   border: 2px solid gray;
@@ -1119,7 +1175,11 @@ export default {
 .modal-input:focus {
   border: 2px solid rgb(0, 0, 0);
   font-size: 0.9rem;
-}
+}*/
+
+
+
+
 
 .modal-footer {
   display: flex;
