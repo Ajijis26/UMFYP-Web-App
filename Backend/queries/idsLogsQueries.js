@@ -1,4 +1,6 @@
 const { dynamoDB } = require('../database');
+const { sendEmailNotification } = require('../snsService');
+const { fetchUserDetails } = require('./userQueries');
 
 // Fetch IDS Logs with optional filtering
 async function getIdsLogs(sourceIP, dstIP, protocolType) {
@@ -84,8 +86,12 @@ async function changeAlertOwner(alerts, newOwner) {
   }
 
   try {
+    // Fetch the new owner's email
+    const newOwnerDetails = await fetchUserDetails(newOwner);
+    const newOwnerEmail = newOwnerDetails.data.email;
+
     for (const alert of alerts) {
-      if (!alert.ConnectionID || !alert.SrcIP) {
+      if (!alert.ConnectionID || !alert.Timestamp) {
         throw new Error("Invalid alert structure. Missing ConnectionID or SrcIP.");
       }
 
@@ -93,7 +99,7 @@ async function changeAlertOwner(alerts, newOwner) {
         TableName: process.env.AWS_DYNAMODB_TABLE_NAME,
         Key: {
           ConnectionID: alert.ConnectionID, // Partition Key
-          SrcIP: alert.SrcIP, // Sort Key
+          Timestamp: alert.Timestamp, // Sort Key
         },
         UpdateExpression: 'SET #owner = :newOwner',
         ExpressionAttributeNames: {
@@ -106,6 +112,14 @@ async function changeAlertOwner(alerts, newOwner) {
 
       console.log("Updating alert:", params); // Debug log
       await dynamoDB.update(params).promise();
+
+      // Send an email notification for each alert
+      await sendEmailNotification(newOwnerEmail, {
+        ConnectionID: alert.ConnectionID,
+        Timestamp: alert.Timestamp,
+        Label: alert.Label,
+        Status: alert.Status,
+      });
     }
 
     return { status: 200, message: 'Alert owner updated successfully' };
@@ -116,13 +130,13 @@ async function changeAlertOwner(alerts, newOwner) {
 }
 
 // Update Alert Status
-async function updateAlertStatus(connectionId, srcIp, status, username) {
+async function updateAlertStatus(connectionId, timestamp, status, username) {
   try {
     const params = {
       TableName: process.env.AWS_DYNAMODB_TABLE_NAME,
       Key: {
         ConnectionID: connectionId, // Partition Key
-        SrcIP: srcIp,              // Sort Key
+        Timestamp: timestamp,              // Sort Key
       },
       UpdateExpression: 'SET #status = :status, #lastUpdatedBy = :lastUpdatedBy',
       ExpressionAttributeNames: {
@@ -143,10 +157,104 @@ async function updateAlertStatus(connectionId, srcIp, status, username) {
   }
 }
 
+// Helper function to process label statistics
+const processLabelStats = (alerts) => {
+  const totalAlerts = alerts.length;
+  const labelCounts = {};
+
+  // Count alerts by label
+  alerts.forEach((alert) => {
+    labelCounts[alert.Label] = (labelCounts[alert.Label] || 0) + 1;
+  });
+
+  // Calculate percentage
+  return Object.keys(labelCounts).map((label) => ({
+    name: label,
+    count: labelCounts[label],
+    percentage: ((labelCounts[label] / totalAlerts) * 100).toFixed(2),
+  }));
+};
+
+// Helper function to fetch real-time alerts
+const getRealTimeAlerts = async () => {
+  try {
+    const params = {
+      TableName: process.env.AWS_DYNAMODB_TABLE_NAME,
+      FilterExpression: '#label <> :normalLabel AND #status = :unresolved',
+      ExpressionAttributeNames: {
+        '#label': 'Label',
+        '#status': 'Status',
+      },
+      ExpressionAttributeValues: {
+        ':normalLabel': 'normal',  // Exclude logs with Label = "normal"
+        ':unresolved': 'unresolved',  // Only include logs with Status = "Unresolved"
+      },
+    };
+
+    const data = await dynamoDB.scan(params).promise();
+
+    // Map data to format expected by the frontend
+    return data.Items.map((alert) => ({
+      timestamp: alert.Timestamp,
+      connectionID: alert.ConnectionID, // Ensure this field is included
+      label: alert.Label, // Add label field
+      owner: alert.Owner || "Unassigned", // Include owner with a default value
+      status: alert.Status,
+    }));
+  } catch (err) {
+    console.error('Error fetching real-time alerts:', err);
+    return [];
+  }
+};
+
+// Group logs by date for the selected week
+async function getLogsGroupedByDate(weekStart, weekEnd) {
+  try {
+    const params = {
+      TableName: process.env.AWS_DYNAMODB_TABLE_NAME,
+      FilterExpression: 'Timestamp BETWEEN :weekStart AND :weekEnd',
+      ExpressionAttributeValues: {
+        ':weekStart': weekStart,
+        ':weekEnd': weekEnd,
+      },
+    };
+
+    const data = await dynamoDB.scan(params).promise();
+
+    // Group logs by date
+    const daysOfWeek = Array.from({ length: 7 }).map((_, i) => {
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + i);
+      return {
+        date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        count: 0,
+      };
+    });
+
+    data.Items.forEach((log) => {
+      const logDate = new Date(log.Timestamp).toISOString().split('T')[0];
+      const day = daysOfWeek.find((d) => d.date === logDate);
+      if (day) {
+        day.count++;
+      }
+    });
+
+    return { status: 200, data: daysOfWeek };
+  } catch (err) {
+    console.error('Error fetching and grouping logs:', err);
+    return { status: 500, error: 'Internal server error' };
+  }
+}
+
+
 
 module.exports = {
   getIdsLogs,
   fetchAlerts,
   changeAlertOwner,
   updateAlertStatus,
+  //processDailyStats,
+  processLabelStats,
+  getRealTimeAlerts,
+  getLogsGroupedByDate,
 };
