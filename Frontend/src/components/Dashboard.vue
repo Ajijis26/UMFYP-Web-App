@@ -1,272 +1,691 @@
-  <template>
-    <div class="dashboard-container">
-      <!-- Key Metrics Section -->
-      <div class="metrics-section">
-        <div class="metric-card">
-          <h3>{{ totalAlerts }}</h3>
-          <p>Alerts Detected</p>
-          <div class="toggle-buttons">
-            <button @click="setTimeFilter('daily')" :class="{ active: timeFilter === 'daily' }">Daily</button>
-            <button @click="setTimeFilter('weekly')" :class="{ active: timeFilter === 'weekly' }">Weekly</button>
-            <button @click="setTimeFilter('monthly')" :class="{ active: timeFilter === 'monthly' }">Monthly</button>
+<template>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h1>Dashboard</h1>
+
+      <!-- Week Selector -->
+      <div class="week-selector">
+        <label for="weekStart">Select Week:</label>
+        <input type="date" id="weekStart" v-model="weekStart" @change="onWeekChange" />
+      </div>
+
+      <div style="display: flex; flex-direction: row; padding: 2rem;">
+        <div class="chart-section" style="margin: 2rem;">
+          <h2>Alerts Detected Over Time</h2>
+          <div class="chart-container">
+            <!-- Loading Spinner Overlay -->
+            <div v-if="chartLoading" class="loading-overlay">
+              <div class="spinner"></div>
+              <p>Loading chart...</p>
+            </div>
+            <!-- Chart Canvas -->
+            <canvas id="alertsChart"></canvas>
           </div>
         </div>
-        <div class="metric-card">
-          <h3>{{ resolvedAlerts }}</h3>
-          <p>Alerts Resolved</p>
-          <div class="toggle-buttons">
-            <button @click="setTimeFilter('daily')" :class="{ active: timeFilter === 'daily' }">Daily</button>
-            <button @click="setTimeFilter('weekly')" :class="{ active: timeFilter === 'weekly' }">Weekly</button>
-            <button @click="setTimeFilter('monthly')" :class="{ active: timeFilter === 'monthly' }">Monthly</button>
+
+      <!-- Logs Over Time -->
+        <div class="chart-section" style="margin: 2rem;">
+          <h2>Logs Over Time</h2>
+          <div class="chart-container">
+            <!-- Loading Spinner Overlay -->
+            <div v-if="logsChartLoading" class="loading-overlay">
+              <div class="spinner"></div>
+              <p>Loading chart...</p>
+            </div>
+            <!-- Chart Canvas -->
+            <canvas id="logsChart"></canvas>
           </div>
         </div>
       </div>
+      <!-- Alerts Detected Over Time -->
+      
 
-
-      <!-- Traffic Visualization Section -->
-      <div class="traffic-section">
-        <h2>Alerts Detected Over Time</h2>
-        <canvas id="trafficChart"></canvas>
+      <!-- Alert Label Distribution -->
+      <div class="alert-label-section">
+        <h2>Alert Labels Distribution</h2>
+        <div class="alert-label-table-section">
+          <table class="alert-label-table">
+            <thead>
+              <tr>
+                <th>Alert Label</th>
+                <th>Count</th>
+                <th>Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Display Loading -->
+              <tr v-if="isLoadingAlertLabels">
+                <td colspan="3" style="text-align: center;">Loading...</td>
+              </tr>
+              <!-- Display No Data Found -->
+              <tr v-else-if="alertLabels.length === 0">
+                <td colspan="3" style="text-align: center;">No data found</td>
+              </tr>
+              <!-- Display Data -->
+              <tr v-else v-for="label in alertLabels" :key="label.name">
+                <td>{{ label.name.toUpperCase() }}</td>
+                <td>{{ label.count }}</td>
+                <td>{{ label.percentage }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-
-      <!-- Real-Time Alert Table -->
-      <div class="alerts-section">
+      <!-- Real-Time Alerts -->
+      <div class="real-time-alerts-section">
         <h2>Real-Time Alerts</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>Source IP</th>
-              <th>Destination IP</th>
-              <th>Port</th>
-              <th>Alert Type</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="alert in alerts" :key="alert.id">
-              <td>{{ alert.timestamp }}</td>
-              <td>{{ alert.srcIP }}</td>
-              <td>{{ alert.dstIP }}</td>
-              <td>{{ alert.port }}</td>
-              <td>{{ alert.type }}</td>
-              <td :class="{'resolved': alert.status === 'Resolved', 'unresolved': alert.status !== 'Resolved'}">
-                {{ alert.status }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="real-time-table-section">
+          <table class="real-time-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Connection ID</th>
+                <th>Label</th>
+                <th>Owner</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Display Loading -->
+              <tr v-if="isLoadingRealTimeAlerts">
+                <td colspan="5" style="text-align: center;">Loading...</td>
+              </tr>
+              <!-- Display No Data Found -->
+              <tr v-else-if="realTimeAlerts.length === 0">
+                <td colspan="5" style="text-align: center;">No data found</td>
+              </tr>
+              <!-- Display Data -->
+              <tr v-else v-for="alert in realTimeAlerts" :key="alert.timestamp">
+                <td>{{ formatTimestamp(alert.timestamp) }}</td>
+                <td>{{ alert.connectionID }}</td>
+                <td>{{ alert.label.toUpperCase() }}</td>
+                <td>{{ alert.owner || 'Unassigned' }}</td>
+                <td :class="{ resolved: alert.status === 'Resolved', unresolved: alert.status !== 'Resolved' }">
+                  {{ alert.status.toUpperCase() }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+
+
     </div>
-  </template>
+  </div>
+</template>
 
-  <script>
-  import { ref, onMounted } from "vue";
-  import Chart from "chart.js/auto";
+<script>
+import { onMounted, ref, nextTick, onUnmounted } from "vue";
+import axios from "axios";
+import Chart from "chart.js/auto";
 
-  export default {
-    name: "Dashboard",
-    setup() {
-      const totalAlerts = ref(10); // Example data
-      const resolvedAlerts = ref(5); // Example data
-      const timeFilter = ref("daily");
-      const alerts = ref([
-        {
-          id: 1,
-          timestamp: "2024-11-30 14:23:11",
-          srcIP: "192.168.1.5",
-          dstIP: "192.168.1.1",
-          port: "443",
-          type: "Port Scan",
-          status: "Unresolved",
-        },
-        // Add more example alerts here
-      ]);
+export default {
+  name: "Dashboard",
+  setup() {
+    const alertsPerDay = ref([]); // Data for alerts detected over time
+    const logsPerDay = ref([]);
+    const alertLabels = ref([]); // Data for alert label distribution
+    const realTimeAlerts = ref([]); // Data for real-time alerts
+    const weekStart = ref(""); // Start date of the selected week
+    const chartLoading = ref(false);
+    const logsChartLoading = ref(false);
+    const isLoadingAlertLabels = ref(true); // Loading state for Alert Labels
+    const isLoadingRealTimeAlerts = ref(true);
+    let alertsChartInstance = null;
+    let logsChartInstance = null;
+    let refreshInterval = null; // To store the interval ID
 
-      const setTimeFilter = (filter) => {
-        timeFilter.value = filter;
-        // Update data based on the selected time filter
-      };
+    // Format the timestamp to 'yyyy-mm-dd hh:mm:ss'
+    const formatTimestamp = (timestamp) => {
+      const date = new Date(timestamp);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    };
 
-      const renderTrafficChart = () => {
-        const ctx = document.getElementById("trafficChart").getContext("2d");
+    const fetchDashboardData = async () => {
+      if (!weekStart.value) return;
 
-        // Create a gradient for the chart bars
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, "rgba(75, 192, 192, 1)");
-        gradient.addColorStop(1, "rgba(75, 192, 192, 0.2)");
+      isLoadingRealTimeAlerts.value = true;
+      isLoadingAlertLabels.value = true;
+      logsChartLoading.value = true;
+      chartLoading.value = true; // Start chart loading
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-        new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], // Added Saturday and Sunday
-            datasets: [
-              {
-                label: "Alerts Detected",
-                data: [12, 19, 3, 5, 2, 7, 8], // Example data for all days
-                backgroundColor: gradient,
-                borderColor: "rgba(75, 192, 192, 1)",
-                borderWidth: 2,
-                borderRadius: 10, // Rounded corners for the bars
-                barPercentage: 0.6, // Bar thickness
-              },
-            ],
+        const startDate = new Date(weekStart.value);
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+
+        const response = await axios.get(`${backendUrl}/api/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false, // Adjusts for custom container sizes
-            plugins: {
-              legend: {
-                display: true,
-                labels: {
-                  color: "#333",
-                  font: {
-                    size: 14,
-                  },
-                },
-              },
-              tooltip: {
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                titleColor: "#fff",
-                bodyColor: "#fff",
-                borderColor: "rgba(75, 192, 192, 1)",
-                borderWidth: 1,
-              },
-            },
-            scales: {
-              x: {
-                ticks: {
-                  color: "#333",
-                  font: {
-                    size: 12,
-                  },
-                },
-                grid: {
-                  display: false, // Hide gridlines for X-axis
-                },
-              },
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  color: "#333",
-                  font: {
-                    size: 12,
-                  },
-                },
-                grid: {
-                  color: "rgba(200, 200, 200, 0.2)", // Light gridlines
-                },
-              },
-            },
+          params: {
+            weekStart: startDate.toISOString(),
+            weekEnd: endDate.toISOString(),
           },
         });
-      };
 
-      onMounted(() => {
-        renderTrafficChart();
+        const data = response.data;
+
+        alertsPerDay.value = data.alertsPerDay || [];
+        alertLabels.value = data.alertLabels || [];
+        realTimeAlerts.value = data.realTimeAlerts || [];
+
+        // Process Logs Data
+        logsPerDay.value = data.logsPerDay || [];
+
+        await nextTick(); // Ensure DOM is updated before rendering chart
+        renderAlertsChart();
+        renderLogsChart();
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+
+        // Handle token expiration or unauthorized access
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          alert("Session expired. Please log in again.");
+          localStorage.removeItem("token"); // Clear token from localStorage
+          window.location.href = "/"; // Redirect to login page
+        }
+      } finally {
+        chartLoading.value = false; // End chart loading
+        logsChartLoading.value = false;
+        isLoadingAlertLabels.value = false;
+        isLoadingRealTimeAlerts.value = false;
+      }
+    };
+
+    /*
+    const fetchLogsOverTime = async () => {
+      if (!weekStart.value) return;
+      logsChartLoading.value = true;
+
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
+        const startDate = new Date(weekStart.value);
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+
+        const response = await axios.get(`${backendUrl}/api/logs-dashboard`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          params: {
+            weekStart: startDate.toISOString(),
+            weekEnd: endDate.toISOString(),
+          },
+        });
+
+        logsPerDay.value = response.data || [];
+        renderLogsChart();
+      } catch (error) {
+        console.error("Error fetching logs over time data:", error);
+      } finally {
+        logsChartLoading.value = false;
+      }
+    };*/
+
+
+    const fetchAlertLabels = async () => {
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+        const response = await axios.get(`${backendUrl}/api/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        const updatedAlertLabels = response.data.alertLabels || [];
+
+        // Sort by percentage in descending order
+        updatedAlertLabels.sort((a, b) => b.percentage - a.percentage);
+
+        alertLabels.value = updatedAlertLabels;
+
+        console.log("Updated and Sorted Alert Labels:", alertLabels.value); // Debugging log
+      } catch (error) {
+        console.error("Error fetching alert label data:", error);
+
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "/";
+        }
+      }
+    };
+
+
+    const fetchRealTimeData = async () => {
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+        const response = await axios.get(`${backendUrl}/api/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        const newRealTimeAlerts = response.data.realTimeAlerts || [];
+
+        // Merge existing data with new data and sort by timestamp (newest first)
+        realTimeAlerts.value = mergeData(realTimeAlerts.value, newRealTimeAlerts, "timestamp").sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp) // Sort descending by timestamp
+        );
+
+        console.log("Updated Real-Time Alerts:", realTimeAlerts.value); // Debugging log
+      } catch (error) {
+        console.error("Error fetching real-time data:", error);
+
+        // Handle token expiration
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "/";
+        }
+      }
+    };
+
+    const mergeData = (existingData, newData, uniqueKey) => {
+      const existingDataMap = new Map(existingData.map((item) => [item[uniqueKey], item]));
+
+      // Merge new data into existing data
+      newData.forEach((newItem) => {
+        existingDataMap.set(newItem[uniqueKey], newItem);
       });
 
-      return {
-        totalAlerts,
-        resolvedAlerts,
-        timeFilter,
-        setTimeFilter,
-        alerts,
-      };
-    },
-  };
-  </script>
-
-  <style scoped>
-  .dashboard-container {
-    display: flex;
-    flex-direction: column;
-    padding: 0px;
-  }
-
-  h2{
-    margin: 0;
-    font-size: 2rem;
-    font-weight: bold;
-  }
-
-  .metrics-section {
-    display: flex;
-    justify-content: space-around;
-    margin: 0 0;
-  }
-  .metric-card {
-    background-color: #f4f4f4;
-    padding: 15px;
-    border-radius: 20px;
-    text-align: center;
-    width: 25%;
-  }
-  h3 {
-    margin: 0;
-    font-size: 2.5rem;
-    font-weight: bold;
-  }
-  
-  .metric-card p {
-    margin: 5px 0 10px;
-    font-size: 1.3rem;
-    font-weight: bold;
-  }
-  .toggle-buttons button {
-    margin: 10px;
-    padding: 15px 30px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    border: none;
-    background-color: #c4c4c4;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .toggle-buttons button.active {
-    background-color: #4caf50;
-    color: white;
-  }
+      // Convert the map back to an array, filtering out resolved alerts
+      return Array.from(existingDataMap.values()).filter((item) => item.status !== "Resolved");
+    };
 
 
-  .traffic-section {
-    margin: 2.0px 0 50px; /* Increased bottom margin for spacing */
-    height: 300px; /* Adjusted height for the chart */
-    position: relative;
-  }
+    const renderAlertsChart = () => {
+      const canvas = document.getElementById("alertsChart");
+      if (!canvas) {
+        console.error("Canvas element not found!");
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        console.error("Canvas context not available!");
+        return;
+      }
+
+      // Generate labels with the format: dayname\ndd/mm/yyyy
+      const startDate = new Date(weekStart.value);
+      const labels = Array.from({ length: 7 }).map((_, i) => {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        const dayName = currentDate.toLocaleDateString("en-US", { weekday: "long" });
+        const date = currentDate.toLocaleDateString("en-GB");
+        return `${dayName}\n${date}`;
+      });
+
+      const data = alertsPerDay.value.map((day) => day.count);
+
+      // Find the maximum value in data to adjust the y-axis
+      const maxValue = Math.max(...data) || 1;
+      const yAxisMax = Math.ceil(maxValue / 5) * 5;
+
+      // Destroy existing chart instance before rendering a new one
+      if (alertsChartInstance) {
+        alertsChartInstance.destroy();
+      }
+
+      alertsChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Alerts Detected ",
+              data,
+              backgroundColor: "rgba(75, 192, 192, 0.2)",
+              borderColor: "rgba(75, 192, 192, 1)",
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                color: "#000",
+                font: { size: 12 },
+                callback: function (value) {
+                  const label = this.getLabelForValue(value);
+                  return label.split("\n");
+                },
+              },
+            },
+            y: {
+              beginAtZero: true,
+              max: yAxisMax,
+              ticks: {
+                color: "#333",
+                callback: function (value) {
+                  return value % 1 === 0 ? value : "";
+                },
+              },
+              grid: { color: "rgba(200, 200, 200, 0.2)" },
+            },
+          },
+        },
+      });
+    };
+
+    const renderLogsChart = () => {
+      const canvas = document.getElementById("logsChart");
+      if (!canvas) {
+        console.error("Canvas element for Logs Chart not found!");
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        console.error("Canvas context for Logs Chart not available!");
+        return;
+      }
+
+      const startDate = new Date(weekStart.value);
+      const labels = Array.from({ length: 7 }).map((_, i) => {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        const dayName = currentDate.toLocaleDateString("en-US", { weekday: "long" });
+        const date = currentDate.toLocaleDateString("en-GB");
+        return `${dayName}\n${date}`;
+      });
+
+      const data = logsPerDay.value.map((day) => day.count);
+
+      const maxValue = Math.max(...data) || 1;
+      const yAxisMax = Math.ceil(maxValue / 5) * 5;
+
+      if (logsChartInstance) {
+        logsChartInstance.destroy();
+      }
+
+      logsChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Logs Collected",
+              data,
+              backgroundColor: "rgba(255, 159, 64, 0.2)",
+              borderColor: "rgba(255, 159, 64, 1)",
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                color: "#000",
+                font: { size: 12 },
+                callback: function (value) {
+                  const label = this.getLabelForValue(value);
+                  return label.split("\n");
+                },
+              },
+            },
+            y: {
+              beginAtZero: true,
+              max: yAxisMax,
+              ticks: {
+                color: "#333",
+              },
+            },
+          },
+        },
+      });
+    };
 
 
-  .alerts-section {
-    margin-top: 20px; /* Added margin-top to push it further down */
-  }
-  .alerts-section table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .alerts-section th {
-    border: 1px solid rgb(0, 0, 0);
-    background-color: silver;
-    font-size: 1rem;
-    padding: 8px;
-  }
-  .alerts-section td {
-    border: 1px solid #000000;
-    padding: 8px;
-    font-size: 0.8rem;
-    text-align: center;
-  }
-  .alerts-section tr:nth-child(even) {
-    background-color: #f9f9f9;
-  }
-  .alerts-section tr:hover {
-    background-color: #f1f1f1;
-  }
-  .resolved {
-    color: green;
-  }
-  .unresolved {
-    color: red;
-  }
-  </style>
 
+
+    const onWeekChange = () => {
+      if (weekStart.value) {
+        fetchDashboardData(); // Fetch new data for the selected week
+      }
+    };
+
+    onMounted(() => {
+      // Get today's date in local time
+      const today = new Date();
+      const localDate = new Date(today); // Already in local timezone
+      weekStart.value = localDate.toLocaleDateString("en-CA"); // Format as "YYYY-MM-DD" for the date input
+
+      fetchDashboardData().then(() => {
+        // Sort realTimeAlerts by timestamp in descending order
+        alertLabels.value.sort((a, b) => b.percentage - a.percentage);
+        realTimeAlerts.value.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      });
+
+      // Start refreshing real-time data every 30 seconds
+      refreshInterval = setInterval(() => {
+        fetchAlertLabels();
+        fetchRealTimeData();
+      }, 10000);
+    });
+
+    onUnmounted(() => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval); // Clear the interval when the component is unmounted
+      }
+    });
+
+    return {
+      alertsPerDay,
+      logsPerDay,
+      alertLabels,
+      realTimeAlerts,
+      weekStart,
+      onWeekChange,
+      formatTimestamp,
+      chartLoading,
+      isLoadingAlertLabels,
+      isLoadingRealTimeAlerts,
+      logsChartLoading,
+    };
+  },
+};
+</script>
+
+<style scoped>
+.dashboard-container {
+  max-width: 100%;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 60px rgba(0, 0, 0, 0.1);
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header h1 {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+  align-self: center;
+}
+
+/* Section Styling */
+.week-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  align-items: center;
+  align-self: center;
+}
+
+.week-selector input {
+  padding: 2px;
+}
+
+.chart-section,
+.alert-label-section,
+.real-time-alerts-section {
+  margin-bottom: 30px;
+  background-color: lightgrey; /* Light gray border for sections */
+  border-radius: 12px; /* Optional: Rounded corners */
+  padding: 15px; /* Add some padding inside sections */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chart-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.chart-section {
+  flex: 1;
+  min-width: 45%;
+}
+
+h2 {
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Chart Styling */
+.chart-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px; /* Set max-width to control chart size */
+  height: 400px; /* Set fixed height for the chart */
+  margin: 0 auto; /* Center the chart */
+}
+
+/* Table Styling */
+.alert-label-table-section {
+  max-height: 65vh; /* Adjust height as needed */
+  overflow-y: auto; /* Add vertical scrolling */
+  overflow-x: auto;
+  border: 1px solid #f8f8f8;
+  background-color: #ccc;
+}
+
+.alert-label-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.alert-label-table th {
+  position: sticky;
+  top: 0;
+  background-color: gray;
+  z-index: 50;
+  font-weight: bold;
+  border-left: 1px solid gray;
+  padding: 10px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.alert-label-table td {
+  padding: 7px;
+  text-align: center;
+  border: 1px solid gray;
+  font-size: 0.8rem;
+}
+
+.alert-label-table tr:hover{
+  background-color: lightgoldenrodyellow;
+}
+
+
+
+.real-time-table-section {
+  max-height: 65vh; /* Adjust height as needed */
+  overflow-y: auto; /* Add vertical scrolling */
+  overflow-x: auto;
+  border: 1px solid #f8f8f8;
+  background-color: #ccc;
+}
+
+.real-time-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.real-time-table th {
+  position: sticky;
+  top: 0;
+  background-color: gray;
+  z-index: 50;
+  font-weight: bold;
+  border-left: 1px solid gray;
+  padding: 10px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.real-time-table td {
+  padding: 7px;
+  text-align: center;
+  border: 1px solid gray;
+  font-size: 0.8rem;
+}
+
+.real-time-table tr:hover{
+  background-color: lightgoldenrodyellow;
+}
+
+.unresolved {
+  color: red;
+  font-weight: bold;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 60;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid #000;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
