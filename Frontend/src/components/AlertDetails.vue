@@ -228,6 +228,7 @@
 <script>
 import { ref, computed, onMounted, nextTick } from "vue";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 export default {
   name: "AlertDetails",
@@ -306,9 +307,16 @@ export default {
         currentUser.value = response.data.username;
       } catch (err) {
         console.error("Error fetching current user:", err);
-        alert("Failed to fetch user information. Redirecting to Login Page");
-        localStorage.removeItem("token");
-        window.location.href = "/";
+        Swal.fire({
+            title: "Failed Operations",
+            text: "Failed to fetch user information. Redirecting to Login Page",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
       }
     };
 
@@ -319,9 +327,16 @@ export default {
         const token = localStorage.getItem("token");
         if (!token) {
           // Handle missing token
-          alert("No token found. Please log in again.");
-          localStorage.removeItem("token"); // Clear the token
-          window.location.href = "/"; // Redirect to login page
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
           return; // Exit the function
         }
 
@@ -345,13 +360,27 @@ export default {
 
         // Check if the error is due to an unauthorized request
         if (err.response && err.response.status === 401) {
-          alert("Session expired or unauthorized access. Please log in again.");
-          localStorage.removeItem("token"); // Clear the token
-          window.location.href = "/"; // Redirect to the login page
+          Swal.fire({
+            title: "Session Expired",
+            text: "Session expired or unauthorized access. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
         } else {
-          alert("Login expired. Please try again.");
-          localStorage.removeItem("token");
-          window.location.href = "/";
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
         }
       } finally {
         isLoading.value = false;
@@ -442,8 +471,15 @@ export default {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          alert('No token found. Please log in again.');
-          return;
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            window.location.href = "/"; // Redirect to login page
+          });
         }
 
         const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -457,15 +493,29 @@ export default {
 
       } catch (err) {
         console.error("Error fetching usernames:", err);
-        alert("Failed to fetch usernames.");
+        Swal.fire({
+            title: "Failed Operations",
+            text: "Failed to fetch usernames.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          });
       }
     };
 
     // Change the owner of selected alerts
     const changeOwner = () => {
       if (selectedAlerts.value.length === 0) {
-        alert("Please select at least one alert to change the owner.");
-        return;
+        Swal.fire({
+            title: "No Alert Selected",
+            text: "Please select at least one alert to change the owner.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            isOwnerModalVisible.value = false;
+            return;
+          });
       }
       isOwnerModalVisible.value = true; // Show the owner modal
     };
@@ -473,8 +523,15 @@ export default {
 
     const confirmChangeOwner = async () => {
       if (!newOwnerUsername.value) {
-        alert("Owner username cannot be empty.");
-        return;
+        Swal.fire({
+            title: "No Alert Selected",
+            text: "Owner username cannot be empty. Please select new Owner username.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            return;
+          });
       }
 
       try {
@@ -492,14 +549,30 @@ export default {
 
         console.log("Alerts to update:", alertsToUpdate); // Debug log
 
-        if (alertsToUpdate.length === 0) {
-          alert("No alerts selected for update.");
-          return;
+        if (alertsToUpdate.length === 0) {          
+          Swal.fire({
+            title: "Failed Operations",
+            text: "No alerts selected for update. Please select at least 1 alert.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            return;
+          });
         }
 
         const token = localStorage.getItem("token");
         if (!token) {
-          alert("No authentication token found. Please log in again.");
+          Swal.fire({
+            title: "Unauthorized !",
+            text: "No authentication token found. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
           return;
         }
 
@@ -528,15 +601,28 @@ export default {
         isOwnerModalVisible.value = false;
       } catch (err) {
         console.error("Error updating owner:", err.response || err);
-        alert("Failed to update owner.");
+        Swal.fire({
+            title: "Failed Operations",
+            text: "Failed to update owner.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          });
       }
     };
 
     // Toggle the status of an alert
     const toggleStatus = async (alertItem) => {
       if (alertItem.Owner !== currentUser.value) {
-        alert("You are not the owner of this alert. Please change the owner to yourself first.");
-        return;
+        Swal.fire({
+            title: "Failed Operations",
+            text: "You are not the owner of this alert. Please change the owner to yourself first.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            return;
+          });
       }
 
       const newStatus = alertItem.Status === "resolved" ? "unresolved" : "resolved";
@@ -563,7 +649,13 @@ export default {
         alertItem.LastUpdatedBy = currentUser.value;
       } catch (err) {
         console.error("Error updating alert status:", err);
-        alert("Failed to update alert status.");
+        Swal.fire({
+            title: "Failed Operations",
+            text: "Failed to update alert status.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          });
       }
     };
 
