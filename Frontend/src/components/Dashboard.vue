@@ -9,8 +9,9 @@
         <input type="date" id="weekStart" v-model="weekStart" @change="onWeekChange" />
       </div>
 
-      <div style="display: flex; flex-direction: row; padding: 2rem;">
-        <div class="chart-section" style="margin: 2rem;">
+      <div class="alertslogs-chart-container">
+        <!-- Alerts Detected Over Time -->
+        <div class="alerts-chart-section">
           <h2>Alerts Detected Over Time</h2>
           <div class="chart-container">
             <!-- Loading Spinner Overlay -->
@@ -23,8 +24,8 @@
           </div>
         </div>
 
-      <!-- Logs Over Time -->
-        <div class="chart-section" style="margin: 2rem;">
+        <!-- Logs Over Time -->
+        <div class="logs-chart-section">
           <h2>Logs Over Time</h2>
           <div class="chart-container">
             <!-- Loading Spinner Overlay -->
@@ -36,8 +37,8 @@
             <canvas id="logsChart"></canvas>
           </div>
         </div>
+
       </div>
-      <!-- Alerts Detected Over Time -->
       
 
       <!-- Alert Label Distribution -->
@@ -200,37 +201,6 @@ export default {
         isLoadingRealTimeAlerts.value = false;
       }
     };
-
-    /*
-    const fetchLogsOverTime = async () => {
-      if (!weekStart.value) return;
-      logsChartLoading.value = true;
-
-      try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL;
-        const startDate = new Date(weekStart.value);
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-
-        const response = await axios.get(`${backendUrl}/api/logs-dashboard`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          params: {
-            weekStart: startDate.toISOString(),
-            weekEnd: endDate.toISOString(),
-          },
-        });
-
-        logsPerDay.value = response.data || [];
-        renderLogsChart();
-      } catch (error) {
-        console.error("Error fetching logs over time data:", error);
-      } finally {
-        logsChartLoading.value = false;
-      }
-    };*/
-
 
     const fetchAlertLabels = async () => {
       try {
@@ -419,7 +389,7 @@ export default {
           labels,
           datasets: [
             {
-              label: "Logs Collected",
+              label: "Logs Collected ",
               data,
               backgroundColor: "rgba(255, 159, 64, 0.2)",
               borderColor: "rgba(255, 159, 64, 1)",
@@ -447,7 +417,11 @@ export default {
               max: yAxisMax,
               ticks: {
                 color: "#333",
+                callback: function (value) {
+                  return value % 1 === 0 ? value : "";
+                },
               },
+              grid: { color: "rgba(200, 200, 200, 0.2)" },
             },
           },
         },
@@ -455,11 +429,13 @@ export default {
     };
 
 
-
-
     const onWeekChange = () => {
       if (weekStart.value) {
-        fetchDashboardData(); // Fetch new data for the selected week
+        fetchDashboardData().then(() => {
+        // Sort realTimeAlerts by timestamp in descending order
+        alertLabels.value.sort((a, b) => b.percentage - a.percentage);
+        realTimeAlerts.value.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      }); // Fetch new data for the selected week
       }
     };
 
@@ -541,7 +517,14 @@ export default {
   padding: 2px;
 }
 
-.chart-section,
+.alertslogs-chart-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+
+.alerts-chart-section,
+.logs-chart-section,
 .alert-label-section,
 .real-time-alerts-section {
   margin-bottom: 30px;
@@ -557,7 +540,13 @@ export default {
   gap: 20px;
 }
 
-.chart-section {
+.alerts-chart-section {
+  flex: 1;
+  min-width: 45%;
+  margin-right: 30px;
+}
+
+.logs-chart-section {
   flex: 1;
   min-width: 45%;
 }
