@@ -176,7 +176,7 @@ onUnmounted(() => {
   font-weight: bold;
   border-top: 3px solid #000080;
   border-bottom: 1px solid #FFE140;
-  height: 100%;
+  /*height: 100%;*/
 }
 
 .logo {
