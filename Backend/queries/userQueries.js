@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { userdataConnection } = require('../database');
 const secretKey = process.env.JWT_SECRET_KEY || 'SecretKeyU2001015HAHAHA';
 const tokenExpiry = '1h';
+const { createSubscriptionIfNotExists } = require('../snsService');
 
 async function registerUser(role, fullname, username, email, password) {
   return new Promise((resolve, reject) => {
@@ -34,7 +35,7 @@ async function registerUser(role, fullname, username, email, password) {
     if (password.length < 8) {
       return reject({ status: 400, error: 'Password must be at least 8 characters long.' });
     }
-    
+
     const checkUserSql = 'SELECT * FROM users WHERE username = ? OR email = ?';
     userdataConnection.query(checkUserSql, [username, email], async (checkErr, results) => {
       if (checkErr) return reject({ status: 500, error: 'Internal server error.' });
@@ -50,13 +51,24 @@ async function registerUser(role, fullname, username, email, password) {
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const insertSql = 'INSERT INTO users (role, full_name, username, email, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())';
-      userdataConnection.query(insertSql, [role, fullname, username, email, hashedPassword], (insertErr) => {
+      userdataConnection.query(insertSql, [role, fullname, username, email, hashedPassword], async (insertErr) => {
         if (insertErr) return reject({ status: 500, error: 'Error registering user.' });
-        resolve({ status: 201, message: 'User registered successfully' });
+
+        try {
+          // Subscribe the user's email to the SNS topic
+          const topicArn = process.env.SNS_TOPIC_ARN;
+          await createSubscriptionIfNotExists(email, topicArn);
+
+          resolve({ status: 201, message: 'User registered successfully. Please confirm the SNS subscription via email.' });
+        } catch (snsErr) {
+          console.error('Error subscribing user to SNS topic:', snsErr);
+          resolve({ status: 201, message: 'User registered successfully, but SNS subscription failed. Please contact admin.' });
+        }
       });
     });
   });
 }
+
 
 async function loginUser(username, password) {
   return new Promise((resolve, reject) => {
