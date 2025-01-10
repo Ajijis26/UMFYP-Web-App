@@ -17,7 +17,7 @@
     font-weight: bold;
     border-top: 3px solid #000080;
     border-bottom: 1px solid #FFE140;
-    height: 100%; /* Adjust the height of the header */
+    /*height: 100%;  Adjust the height of the header */
 }
 
 .logo {
