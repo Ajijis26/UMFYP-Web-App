@@ -74,7 +74,18 @@ watch(
 
 
 <style scoped>
+header {
+  position: fixed; /* Makes the header fixed at the top */
+  top: 0; /* Aligns it to the top of the page */
+  left: 0; /* Ensures it starts from the left edge */
+  width: 100%; /* Stretches the header across the full width */
+  z-index: 1000; /* Ensures the header is above other elements */
+  background-color: #fff; /* Optional: Set background color to avoid transparency */
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for better visibility */
+}
+
 main {
   padding: 1em;
+  padding-top: 90px;
 }
 </style>
