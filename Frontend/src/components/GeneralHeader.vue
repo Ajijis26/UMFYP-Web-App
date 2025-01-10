@@ -1,6 +1,6 @@
 <template>
   <header class="general-header">
-    <img class="logo" src="/src/assets/Logo UM.png" alt="Logo" />
+    <!--img class="logo" src="/src/assets/Logo UM.png" alt="Logo" /-->
     <h1 class="header-title">IDS Web Application</h1>
     
     <!-- Hamburger Menu -->
