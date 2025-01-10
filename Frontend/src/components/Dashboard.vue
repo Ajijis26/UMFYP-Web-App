@@ -197,6 +197,7 @@ export default {
             text: "Your session has expired. Please log in again.",
             icon: "warning",
             confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
           }).then(() => {
             localStorage.removeItem("token"); // Clear token from localStorage
             window.location.href = "/"; // Redirect to login page
@@ -238,6 +239,7 @@ export default {
             text: "Your session has expired. Please log in again.",
             icon: "warning",
             confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
           }).then(() => {
             localStorage.removeItem("token"); // Clear token from localStorage
             window.location.href = "/"; // Redirect to login page
@@ -275,6 +277,7 @@ export default {
             text: "Your session has expired. Please log in again.",
             icon: "warning",
             confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
           }).then(() => {
             localStorage.removeItem("token");
             window.location.href = "/";
