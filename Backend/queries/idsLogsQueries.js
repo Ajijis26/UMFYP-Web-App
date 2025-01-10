@@ -1,5 +1,5 @@
 const { dynamoDB } = require('../database');
-const { sendEmailNotification } = require('../snsService');
+const { sendEmailNotificationSES } = require('../snsService');
 const { fetchUserDetails } = require('./userQueries');
 
 // Fetch IDS Logs with optional filtering
@@ -92,7 +92,7 @@ async function changeAlertOwner(alerts, newOwner) {
 
     for (const alert of alerts) {
       if (!alert.ConnectionID || !alert.Timestamp) {
-        throw new Error("Invalid alert structure. Missing ConnectionID or SrcIP.");
+        throw new Error("Invalid alert structure. Missing ConnectionID or Timestamp.");
       }
 
       const params = {
@@ -113,21 +113,35 @@ async function changeAlertOwner(alerts, newOwner) {
       console.log("Updating alert:", params); // Debug log
       await dynamoDB.update(params).promise();
 
-      // Send an email notification for each alert
-      await sendEmailNotification(newOwnerEmail, {
-        ConnectionID: alert.ConnectionID,
-        Timestamp: alert.Timestamp,
-        Label: alert.Label,
-        Status: alert.Status,
-      });
+      // Send an email notification via SES
+      const emailSubject = 'Alert Ownership Change Notification';
+      const emailBody = `
+Dear ${newOwner},
+
+You have been assigned as the new owner for the following alert:
+
+  Connection ID : ${alert.ConnectionID}
+  Timestamp     : ${alert.Timestamp}
+  Label         : ${alert.Label}
+  Status        : ${alert.Status}
+
+Please log in to the system. Then go to the Alert Details page for further details. 
+Here is the system link: https://umfypidswebapp.netlify.app/
+
+Best Regards,
+System Admin
+      `;
+
+      await sendEmailNotificationSES(newOwnerEmail, emailSubject, emailBody);
     }
 
-    return { status: 200, message: 'Alert owner updated successfully' };
+    return { status: 200, message: 'Alert owner updated and email sent successfully' };
   } catch (err) {
-    console.error("Error updating alert owner into database:", err);
+    console.error("Error updating alert owner and sending email:", err);
     return { status: 500, error: 'Internal server error' };
   }
 }
+
 
 // Update Alert Status
 async function updateAlertStatus(connectionId, timestamp, status, username) {
