@@ -63,7 +63,7 @@
             placeholder="Enter a new username if you want to change it"
             :class="{ 'error-border': errors.newUsername }"
           />
-          <span v-if="errors.newUsername" class="error-text">New username is already taken.</span>
+          <span v-if="errors.newUsername" class="error-text">Username is already taken.</span>
         </div>
 
         <!-- Old Password -->
@@ -112,7 +112,7 @@
       
     </div>
 
-    <!-- Success Modal -->
+    <!-- Success Modal 
     <div v-if="showSuccessModal" class="modal-overlay">
       <div class="modal-content">
         <h2 class="modal-title">Updated !</h2>
@@ -121,7 +121,7 @@
           <button @click="closeSuccessModal" class="btn-modal">Close</button>
         </div>
       </div>
-    </div>
+    </div>-->
     
   </div>
 </template>
@@ -129,6 +129,8 @@
 <script>
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
+import Swal from "sweetalert2";
+
 
 export default {
   data() {
@@ -181,17 +183,51 @@ export default {
             },
           }
         );
+        if (!token) {
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          });
+          return;
+        }
 
         this.user = response.data;
       } catch (error) {
         console.error("Error fetching user details:", error);
+        
         if (error.response && error.response.status === 401) {
-          alert("Session expired. Redirecting to login.");
-          localStorage.removeItem("token");
-          window.location.href = "/";
+          // Use SweetAlert2 for session expired
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          });
         } else {
           this.errorMessage = "Failed to load user's account details.";
         }
+
+        Swal.fire({
+            title: "Token Missing",
+            text: "No token has been intialized. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          });
+          return;
       }
     },
 
@@ -225,27 +261,39 @@ export default {
           }
         );
 
-        console.log("Update response:", response.data); // Debugging
-
         const newToken = response.data.token;
         if (!newToken) {
-          alert("Session expired. Please log in again.");
-          localStorage.removeItem("token");
-          window.location.href = "/";
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          });
           return;
         }
 
-        // Success feedback
-        this.successMessage = "Account details updated successfully.";
+        // Success feedback with SweetAlert2
+        Swal.fire({
+          title: "Success!",
+          text: "Your account details have been updated successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#007bff", 
+        }).then(() => {
+          this.$router.push("/dashboard"); // Redirect to dashboard after closing the modal
+        });
 
         localStorage.setItem("token", newToken);
         axios.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
-        this.$emit('userUpdated', {
+        this.$emit("userUpdated", {
           userName: this.user.fullname,
           userRole: this.user.role,
         });
         this.resetFormFields();
-        this.showSuccessModal = true;
       } catch (error) {
         console.error("Error updating account details:", error);
 
@@ -261,14 +309,19 @@ export default {
         }
 
         if (error.response?.data?.error) {
-          this.errorMessage = error.response.data.error; // Backend error message
-        } 
-        
-        if (error.response && error.response.status === 401) {
-          alert("Session expired. Redirecting to login.");
-          localStorage.removeItem("token");
-          window.location.href = "/";
-        } 
+          this.errorMessage = error.response.data.error;
+        } else if (error.response && error.response.status === 401) {
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          });
+        }
         
         else {
           this.errorMessage = "An error occurred while updating your account.";
@@ -464,7 +517,7 @@ export default {
 .error-message {
   transition: opacity 0.3s ease;
 }
-
+/*
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -486,8 +539,8 @@ export default {
   border-radius: 30px;
   padding: 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  display: flex; /* Add this */
-  flex-direction: column; /* Align children vertically */
+  display: flex; 
+  flex-direction: column;
   align-items: center;
 }
 
@@ -527,6 +580,7 @@ export default {
   background-color: darkred;
   transform: scale(1.05);
 }
+*/
 
 .loading-overlay {
   position: fixed;
