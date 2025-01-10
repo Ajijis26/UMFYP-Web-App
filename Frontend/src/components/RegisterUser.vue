@@ -109,6 +109,7 @@
 <script>
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import Swal from "sweetalert2";
 
 export default {
   data() {
@@ -201,9 +202,16 @@ export default {
       } catch (err) {
         console.error("Registration Error:", err);
         if (err.response?.status === 401) {
-          alert("Session expired. Redirecting to login.");
-          localStorage.removeItem("token");
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Redirecting to login.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token");
           this.$router.push("/");
+          });
         } else if (err.response?.data?.error) {
           if (err.response.data.error === "Username already exists.") {
             this.errors.username = true;
@@ -212,11 +220,23 @@ export default {
             this.errors.email = true;
             this.emailErrorText = "Email already exists.";
           } else {
-            alert(err.response.data.error);
-            this.emailErrorText = err.response.data.error; // Display other backend errors
+            this.emailErrorText = err.response.data.error
+            Swal.fire({
+              title: "Failed Operations",
+              text: err.response.data.error,
+              icon: "warning",
+              confirmButtonText: "OK",
+              confirmButtonColor: "#ff0000",
+            });
           }
         } else {
-          alert("An unexpected error occurred. Please try again.");
+          Swal.fire({
+            title: "Failed Operations",
+            text: "An unexpected error occurred. Please try again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          });
         }
       } finally {
         this.isLoading = false;
@@ -268,10 +288,17 @@ export default {
   async mounted() {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Token Invalid. Redirecting to login.");
-      localStorage.removeItem("token");
-      this.$router.push('/'); // Redirect to login if no token
-      return;
+      Swal.fire({
+            title: "Unauthorized !",
+            text: "Token Invalid. Redirecting to login.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token");
+            this.$router.push('/');
+            return;
+          });
     }
 
     try {
@@ -285,9 +312,17 @@ export default {
       }
     } catch (err) {
         console.error("Error decoding token:", err);
-        alert("Token Invalid. Redirecting to login.");
-        localStorage.removeItem("token");
-        this.$router.push('/'); // Redirect to login on error
+        Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token");
+            this.$router.push('/');
+          });
+         // Redirect to login on error
     }
   },
 
