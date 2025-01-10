@@ -2,81 +2,88 @@ const AWS = require('aws-sdk');
 
 // Configure AWS SNS
 AWS.config.update({
-  accessKeyId: process.env.AWS_SNS_ACCESS_KEY_ID, // Set in your .env file
-  secretAccessKey: process.env.AWS_SNS_SECRET_ACCESS_KEY, // Set in your .env file
-  region: process.env.AWS_SNS_REGION, // Example: 'us-east-1'
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID, 
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, 
+  region: process.env.AWS_REGION,
 });
 
 const sns = new AWS.SNS();
+const ses = new AWS.SES();
+
+const verifyEmailWithSES = async (email) => {
+  try {
+    const params = { EmailAddress: email };
+    await ses.verifyEmailIdentity(params).promise();
+    console.log(`Verification email sent to ${email}.`);
+  } catch (error) {
+    console.error(`Error verifying email with SES: ${error.message}`);
+    throw error;
+  }
+};
 
 // Function to dynamically create a subscription
 const createSubscriptionIfNotExists = async (email, topicArn) => {
   try {
-    // List subscriptions for the topic
+    // Check if the email is already subscribed to the SNS topic
     const subscriptions = await sns.listSubscriptionsByTopic({ TopicArn: topicArn }).promise();
-
-    // Check if the email is already subscribed
     const isSubscribed = subscriptions.Subscriptions.some(
       (subscription) => subscription.Endpoint === email && subscription.SubscriptionArn !== 'PendingConfirmation'
     );
 
     if (isSubscribed) {
       console.log(`Email ${email} is already subscribed to the topic.`);
-      return; // Exit if already subscribed
+    } else {
+      // Subscribe the email to the SNS topic
+      const subscriptionParams = {
+        Protocol: 'email',
+        TopicArn: topicArn,
+        Endpoint: email,
+      };
+      const result = await sns.subscribe(subscriptionParams).promise();
+      console.log(`Subscription request sent to ${email}:`, result);
     }
 
-    // Create a new subscription
-    const params = {
-      Protocol: 'email', // Email subscription
-      TopicArn: topicArn,
-      Endpoint: email,
-    };
-
-    const result = await sns.subscribe(params).promise();
-    console.log(`Subscription request sent to ${email}:`, result);
-    console.log(`The user must confirm the subscription via the email sent by AWS SNS.`);
+    // Verify the email address with SES
+    await verifyEmailWithSES(email);
   } catch (error) {
-    console.error('Error creating subscription:', error.message);
+    console.error(`Error creating subscription or verifying email: ${error.message}`);
     throw error;
   }
 };
 
-const sendEmailNotification = async (recipientEmail, alertDetails) => {
-  const topicArn = process.env.SNS_TOPIC_ARN;
 
-  // Dynamically create subscription if needed
-  await createSubscriptionIfNotExists(recipientEmail, topicArn);
-
-  const message = `Dear User,
-
-You have been assigned as the new owner for the following alert:
-
-Connection ID: ${alertDetails.ConnectionID}
-Timestamp: ${alertDetails.Timestamp}
-Label: ${alertDetails.Label}
-Status: ${alertDetails.Status}
-
-Please log in to the system. Then go to the Alert Details page for further details. 
-Here is the system link: https://umfypidswebapp.netlify.app/
-
-Best Regards,
-System Admin`;
-
+const sendEmailNotificationSES = async (recipientEmail, subject, body) => {
   const params = {
-    Message: message,
-    Subject: 'Alert Ownership Change Notification',
-    TopicArn: topicArn, // Replace with your SNS Topic ARN
+    Source: process.env.SES_EMAIL_FROM, // Verified sender email
+    Destination: {
+      ToAddresses: [recipientEmail],
+    },
+    Message: {
+      Subject: {
+        Data: subject,
+      },
+      Body: {
+        Text: {
+          Data: body, // For plain text emails
+        },
+        // Uncomment below for HTML emails:
+        // Html: {
+        //   Data: `<html><body>${body}</body></html>`,
+        // },
+      },
+    },
   };
 
   try {
-    const result = await sns.publish(params).promise();
-    console.log('SNS Publish Response:', result);
-    console.log(`Email notification sent to: ${recipientEmail}`);
+    const result = await ses.sendEmail(params).promise();
+    console.log(`Email sent to ${recipientEmail}:`, result);
   } catch (error) {
-    console.error('Error sending email notification:', error.message);
+    console.error(`Error sending email to ${recipientEmail}:`, error.message);
+    throw error;
   }
 };
 
 module.exports = {
-  sendEmailNotification,
+  createSubscriptionIfNotExists,
+  sendEmailNotificationSES,
 };
