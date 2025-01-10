@@ -164,6 +164,7 @@
 <script>
 import { ref, computed, onMounted, nextTick } from "vue";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 export default {
   name: "LogsDetails",
@@ -228,10 +229,16 @@ export default {
         const token = localStorage.getItem("token");
         if (!token) {
           // Handle missing token
-          alert("No token found. Please log in again.");
-          localStorage.removeItem("token"); // Clear the token
-          window.location.href = "/"; // Redirect to login page
-          return; // Exit the function
+          Swal.fire({
+            title: "Unauthorized !",
+            text: "No token found. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
         }
 
         const apiBackendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -262,13 +269,27 @@ export default {
 
         // Check if the error is due to an unauthorized request
         if (err.response && err.response.status === 401) {
-          alert("Session expired or unauthorized access. Please log in again.");
-          localStorage.removeItem("token"); // Clear the token
-          window.location.href = "/"; // Redirect to the login page
+          Swal.fire({
+            title: "Session Expired",
+            text: "Session expired or unauthorized access. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
         } else {
-          alert("Login expired. Please try again.");
-          localStorage.removeItem("token");
-          window.location.href = "/";
+          Swal.fire({
+            title: "Session Expired",
+            text: "Login expired. Please try again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
         }
       } finally {
         isLoading.value = false;
