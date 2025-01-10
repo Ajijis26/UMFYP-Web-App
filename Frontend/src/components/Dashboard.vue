@@ -120,6 +120,7 @@
 import { onMounted, ref, nextTick, onUnmounted } from "vue";
 import axios from "axios";
 import Chart from "chart.js/auto";
+import Swal from "sweetalert2";
 
 export default {
   name: "Dashboard",
@@ -190,9 +191,16 @@ export default {
 
         // Handle token expiration or unauthorized access
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-          alert("Session expired. Please log in again.");
-          localStorage.removeItem("token"); // Clear token from localStorage
-          window.location.href = "/"; // Redirect to login page
+          // Use SweetAlert2 for token expiration
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
         }
       } finally {
         chartLoading.value = false; // End chart loading
@@ -223,9 +231,17 @@ export default {
       } catch (error) {
         console.error("Error fetching alert label data:", error);
 
-        if (error.response && error.response.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/";
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          // Use SweetAlert2 for token expiration
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
         }
       }
     };
@@ -254,8 +270,15 @@ export default {
 
         // Handle token expiration
         if (error.response && error.response.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/";
+          Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+          }).then(() => {
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          });
         }
       }
     };
