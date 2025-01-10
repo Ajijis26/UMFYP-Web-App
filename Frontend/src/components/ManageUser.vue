@@ -160,6 +160,7 @@
 
 <script>
 import axios from 'axios';
+import Swal from "sweetalert2";
 
 export default {
   data() {
@@ -221,13 +222,24 @@ export default {
       } catch (error) {
         console.error("Error fetching users:", error);
         if (error.response?.status === 401) {
-            alert("Session expired. Redirecting to login.");
-            localStorage.removeItem("token"); // Clear token
-            this.$router.push("/"); // Redirect to login
+            Swal.fire({
+            title: "Session Expired",
+            text: "Your session has expired. Please log in again.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            localStorage.removeItem("token"); // Clear token from localStorage
+            window.location.href = "/"; // Redirect to login page
+          });
         } else {
-            alert(
-                error.response?.data?.error || "Failed to fetch users. Please try again."
-            );
+            Swal.fire({
+              title: "Failed Operations",
+              text: "Failed to fetch users. Please try again.",
+              icon: "warning",
+              confirmButtonText: "OK",
+              confirmButtonColor: "#ff0000",
+            });
         }
       } finally {
         this.isLoading = false;
@@ -237,8 +249,16 @@ export default {
     // Show the delete confirmation modal
     confirmDeleteUsers() {
       if (!this.selectedUsers.length) {
-        alert("No users selected for deletion.");
-        return;
+        Swal.fire({
+            title: "Failed Operations",
+            text: "No users selected for deletion. Please select at least 1 user.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            this.showConfirmationModal = false;
+            return;
+          });
       }
       this.showConfirmationModal = true;
     },
@@ -263,13 +283,24 @@ export default {
       } catch (error) {
         console.error("Error deleting users:", error);
         if (error.response?.status === 401) {
-            alert("Session expired. Redirecting to login.");
-            localStorage.removeItem("token"); // Clear token
-            this.$router.push("/"); // Redirect to login
+            Swal.fire({
+              title: "Session Expired",
+              text: "Your session has expired. Please log in again.",
+              icon: "warning",
+              confirmButtonText: "OK",
+              confirmButtonColor: "#ff0000",
+            }).then(() => {
+              localStorage.removeItem("token"); // Clear token from localStorage
+              window.location.href = "/"; // Redirect to login page
+            });
         } else {
-            alert(
-                error.response?.data?.error || "Failed to delete users. Please try again."
-            );
+            Swal.fire({
+              title: "Failed Operations",
+              text: "Failed to delete users. Please try again.",
+              icon: "warning",
+              confirmButtonText: "OK",
+              confirmButtonColor: "#ff0000",
+            });
         }
       } finally {
         this.isLoading = false; // Hide loading spinner
@@ -398,8 +429,16 @@ export default {
   mounted() {
     const token = localStorage.getItem("token");
     if (!token) {
-        alert("No valid session found. Redirecting to login.");
-        this.$router.push("/"); // Redirect to login
+        Swal.fire({
+            title: "Invalid Session !",
+            text: "No valid session found. Redirecting to login.",
+            icon: "warning",
+            confirmButtonText: "OK",
+            confirmButtonColor: "#ff0000",
+          }).then(() => {
+            this.$router.push("/");
+          });
+         // Redirect to login
         return;
     }
 
